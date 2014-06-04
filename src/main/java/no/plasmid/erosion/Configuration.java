@@ -7,7 +7,10 @@ public class Configuration {
 	public static final float Z_NEAR				= 0.1f;
 	public static final float Z_FAR					= 20000.0f;
 	public static final float FIELD_OF_VIEW	= 60.0f;	//Degrees
-
+	
+	public static final float CAMERA_MOVEMENT_SPEED	= 6.0f;
+	public static final float CAMERA_ROTATION_SPEED	= 2.0f;	//Degrees
+	
 	public static final int TERRAIN_SIZE		= 64;	//Unit is terrain tiles
 	public static final int TERRAIN_TILE_SIZE	= 256;	//Unit is meters
 	

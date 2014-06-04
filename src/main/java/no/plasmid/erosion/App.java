@@ -13,6 +13,7 @@ import org.lwjgl.opengl.PixelFormat;
 import org.lwjgl.util.vector.Matrix4f;
 import org.lwjgl.util.vector.Vector3f;
 
+import no.plasmid.erosion.im.Camera;
 import no.plasmid.erosion.im.Renderable;
 import no.plasmid.erosion.im.Terrain;
 import no.plasmid.lib.AbstractApp;
@@ -67,6 +68,8 @@ public class App extends AbstractApp
    * Run the application
    */
   private void runApplication() {
+  	Camera camera = new Camera();
+  	
   	Terrain terrain = new Terrain();
   	terrain.createInitialTerrain();
   	List<Renderable> renderables = new ArrayList<Renderable>();
@@ -86,25 +89,41 @@ public class App extends AbstractApp
   		//Run erosion "simulation" (one step)
   		terrain.runErsionStep(renderer);
   		
-  		if (inputHandler.getKeyStatus()[Keyboard.KEY_LEFT]) {
-  			viewMatrix.rotate((float)Math.toRadians(-1.0), new Vector3f(0.0f, 1.0f, 0.0f));
-  		}
-  		if (inputHandler.getKeyStatus()[Keyboard.KEY_RIGHT]) {
-  			viewMatrix.rotate((float)Math.toRadians(1.0), new Vector3f(0.0f, 1.0f, 0.0f));
-  		}
-  		if (inputHandler.getKeyStatus()[Keyboard.KEY_UP]) {
-  			viewMatrix.rotate((float)Math.toRadians(1.0), new Vector3f(1.0f, 0.0f, 0.0f));
-  		}
-  		if (inputHandler.getKeyStatus()[Keyboard.KEY_DOWN]) {
-  			viewMatrix.rotate((float)Math.toRadians(-1.0), new Vector3f(1.0f, 0.0f, 0.0f));
-  		}
-  		if (inputHandler.getKeyStatus()[Keyboard.KEY_NEXT]) {
-  			viewMatrix.translate(new Vector3f(0.0f, 1.0f, 0.0f));
-  		}
-  		if (inputHandler.getKeyStatus()[Keyboard.KEY_PRIOR]) {
-  			viewMatrix.translate(new Vector3f(0.0f, -1.0f, 0.0f));
+  		if (inputHandler.getKeyStatus()[Keyboard.KEY_LSHIFT] || inputHandler.getKeyStatus()[Keyboard.KEY_RSHIFT]) {
+    		if (inputHandler.getKeyStatus()[Keyboard.KEY_LEFT]) {
+    			camera.rotateCamera(new Vector3f(0.0f, -Configuration.CAMERA_ROTATION_SPEED, 0.0f));
+    		}
+    		if (inputHandler.getKeyStatus()[Keyboard.KEY_RIGHT]) {
+    			camera.rotateCamera(new Vector3f(0.0f, Configuration.CAMERA_ROTATION_SPEED, 0.0f));
+    		}
+    		if (inputHandler.getKeyStatus()[Keyboard.KEY_UP]) {
+    			camera.rotateCamera(new Vector3f(Configuration.CAMERA_ROTATION_SPEED, 0.0f, 0.0f));
+    		}
+    		if (inputHandler.getKeyStatus()[Keyboard.KEY_DOWN]) {
+    			camera.rotateCamera(new Vector3f(-Configuration.CAMERA_ROTATION_SPEED, 0.0f, 0.0f));
+    		}
+  		} else {
+    		if (inputHandler.getKeyStatus()[Keyboard.KEY_LEFT]) {
+    			camera.moveCamera(new Vector3f(Configuration.CAMERA_MOVEMENT_SPEED, 0.0f, 0.0f));
+    		}
+    		if (inputHandler.getKeyStatus()[Keyboard.KEY_RIGHT]) {
+    			camera.moveCamera(new Vector3f(-Configuration.CAMERA_MOVEMENT_SPEED, 0.0f, 0.0f));
+    		}
+    		if (inputHandler.getKeyStatus()[Keyboard.KEY_UP]) {
+    			camera.moveCamera(new Vector3f(0.0f, 0.0f, Configuration.CAMERA_MOVEMENT_SPEED));
+    		}
+    		if (inputHandler.getKeyStatus()[Keyboard.KEY_DOWN]) {
+    			camera.moveCamera(new Vector3f(0.0f, 0.0f, -Configuration.CAMERA_MOVEMENT_SPEED));
+    		}
+    		if (inputHandler.getKeyStatus()[Keyboard.KEY_NEXT]) {
+    			camera.moveCamera(new Vector3f(0.0f, Configuration.CAMERA_MOVEMENT_SPEED, 0.0f));
+    		}
+    		if (inputHandler.getKeyStatus()[Keyboard.KEY_PRIOR]) {
+    			camera.moveCamera(new Vector3f(0.0f, -Configuration.CAMERA_MOVEMENT_SPEED, 0.0f));
+    		}
   		}
   		
+    	viewMatrix = camera.createViewMatrix();
     	viewMatrix.store(vmBuffer);
     	vmBuffer.flip();
   		renderer.render(pmBuffer, vmBuffer, renderables);
