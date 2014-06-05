@@ -20,7 +20,7 @@ public class Terrain extends Renderable {
 		
 		for (int x = 0; x < Configuration.TERRAIN_SIZE; x++) {
 			for (int z = 0; z < Configuration.TERRAIN_SIZE; z++) {
-				heightMap[x][z] = (float)(Math.sin(((double)x / Configuration.TERRAIN_SIZE)* Math.PI) * Math.sin(((double)z / Configuration.TERRAIN_SIZE)* Math.PI) * 2500) - 150.0f + random.nextFloat() * 100;
+				heightMap[x][z] = (float)(Math.sin(((double)x / Configuration.TERRAIN_SIZE)* Math.PI) * Math.sin(((double)z / Configuration.TERRAIN_SIZE)* Math.PI) * 4500) - 250.0f + random.nextFloat() * 100;
 			}
 		}
 	}
@@ -47,10 +47,11 @@ public class Terrain extends Renderable {
 					boolean finished = false;
 					float amountMoved = 0.0f;
 					while (!finished) {
-						if (heightMap[curX][curZ] < -10.0f) {
+						if (heightMap[curX][curZ] < 0.0f) {
 							//If under water, don't erode
 							finished = true;
-							newHeightMap[curX][curZ] += amountMoved;
+							
+							distributeMovedMaterial(curX, curZ, newHeightMap, amountMoved);
 							continue;
 						}
 						
@@ -77,9 +78,7 @@ public class Terrain extends Renderable {
 						switch (lowestNeighbor) {
 						case 0:
 							finished = true;
-//						System.out.println("Old height: " + newHeightMap[curX][curZ]);
-							newHeightMap[curX][curZ] += amountMoved;
-//							System.out.println("New height: " + newHeightMap[curX][curZ]);
+							distributeMovedMaterial(curX, curZ, newHeightMap, amountMoved);
 							break;
 						case 1:
 							if (((heightMap[curX][curZ] - lowestPoint) > landslideDeltaHeight) && (Math.random() < Configuration.TERRAIN_LANDSLIDE_CHANCE)) {
@@ -127,7 +126,7 @@ public class Terrain extends Renderable {
 							break;
 						default:
 							finished = true;
-							newHeightMap[curX][curZ] += amountMoved;
+							distributeMovedMaterial(curX, curZ, newHeightMap, amountMoved);
 							break;
 						}
 					}
@@ -361,6 +360,24 @@ public class Terrain extends Renderable {
 		rc[3] = average(h5, h7, h8, heightMap[x][z]);
 		
 		return rc;
+	}
+	
+	private void distributeMovedMaterial(int curX, int curZ, float[][] newHeightMap, float amountMoved) {
+		float amountPart = amountMoved / 8;
+		
+		if (curX != 0) {
+			newHeightMap[curX-1][curZ] += amountPart;
+		}
+		if (curX != Configuration.TERRAIN_SIZE - 1) {
+			newHeightMap[curX+1][curZ] += amountPart;
+		}
+		if (curZ != 0) {
+			newHeightMap[curX][curZ-1] += amountPart;
+		}
+		if (curZ != Configuration.TERRAIN_SIZE - 1) {
+			newHeightMap[curX][curZ+1] += amountPart;
+		}
+		newHeightMap[curX][curZ] += amountPart * 4;
 	}
 	
 }

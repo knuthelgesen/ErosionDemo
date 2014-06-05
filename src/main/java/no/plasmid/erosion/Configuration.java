@@ -20,8 +20,8 @@ public class Configuration {
 	public static final int TERRAIN_NOISE_OCTAVES			= 5;
 //	public static final int TERRAIN_NOISE_RANDOM_SEED		= (int)(System.currentTimeMillis() % 46340);
 	public static final int TERRAIN_NOISE_RANDOM_SEED		= 1;
-	public static final float TERRAIN_EROSION_AMOUNT		= 0.00005f;
-	public static final int TERRAIN_EROSION_STEPS				= 1;
+	public static final float TERRAIN_EROSION_AMOUNT		= 0.0001f;
+	public static final int TERRAIN_EROSION_STEPS				= 1;		//Number of erosion steps each frame
 	public static final float TERRAIN_LANDSLIDE_ANGLE		= 80.0f;	//Angle at which the terrain is considered for a landslide
 	public static final float TERRAIN_LANDSLIDE_CHANCE	= 0.0001f;	//Chance of landslide occuring (considered each tick, so should be low)
 }
