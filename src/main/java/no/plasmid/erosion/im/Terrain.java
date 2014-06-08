@@ -10,6 +10,10 @@ import no.plasmid.erosion.Renderer;
 
 public class Terrain extends Renderable {
 
+	private Vector3f colorGreen = new Vector3f(0.0f, 0.7f, 0.1f);
+	private Vector3f colorSand = new Vector3f(0.85f, 0.6f, 0.0f);
+	private Vector3f colorGrey = new Vector3f(0.65f, 0.65f, 0.65f);
+	
 	private float[][] heightMap;
 
 	public void createInitialTerrain() {
@@ -20,7 +24,8 @@ public class Terrain extends Renderable {
 		
 		for (int x = 0; x < Configuration.TERRAIN_SIZE; x++) {
 			for (int z = 0; z < Configuration.TERRAIN_SIZE; z++) {
-				heightMap[x][z] = (float)(Math.sin(((double)x / Configuration.TERRAIN_SIZE)* Math.PI) * Math.sin(((double)z / Configuration.TERRAIN_SIZE)* Math.PI) * 4500) - 250.0f + random.nextFloat() * 100;
+				heightMap[x][z] = (float)(Math.sin(((double)x / Configuration.TERRAIN_SIZE)* Math.PI) * Math.sin(((double)z / Configuration.TERRAIN_SIZE)* Math.PI) * 4000) - 550.0f + random.nextFloat() * 100;
+//				heightMap[x][z] = (float)x * 50 - 550.0f + random.nextFloat() * 100;
 			}
 		}
 	}
@@ -84,7 +89,8 @@ public class Terrain extends Renderable {
 							if (((heightMap[curX][curZ] - lowestPoint) > landslideDeltaHeight) && (Math.random() < Configuration.TERRAIN_LANDSLIDE_CHANCE)) {
 								float deltaY = (heightMap[curX][curZ] - lowestPoint) / 2;
 								newHeightMap[curX][curZ] -= deltaY;
-								newHeightMap[curX][curZ-1] += deltaY;
+								distributeMovedMaterial(curX, curZ - 1, newHeightMap, deltaY);
+//								newHeightMap[curX][curZ-1] += deltaY;
 							} else {
 								newHeightMap[curX][curZ] -= Configuration.TERRAIN_EROSION_AMOUNT;
 								amountMoved += Configuration.TERRAIN_EROSION_AMOUNT;
@@ -95,7 +101,8 @@ public class Terrain extends Renderable {
 							if (((heightMap[curX][curZ] - lowestPoint) > landslideDeltaHeight) && (Math.random() < Configuration.TERRAIN_LANDSLIDE_CHANCE)) {
 								float deltaY = (heightMap[curX][curZ] - lowestPoint) / 2;
 								newHeightMap[curX][curZ] -= deltaY;
-								newHeightMap[curX+1][curZ] += deltaY;
+								distributeMovedMaterial(curX + 1, curZ, newHeightMap, deltaY);
+//								newHeightMap[curX+1][curZ] += deltaY;
 							} else {
 								newHeightMap[curX][curZ] -= Configuration.TERRAIN_EROSION_AMOUNT;
 								amountMoved += Configuration.TERRAIN_EROSION_AMOUNT;
@@ -106,7 +113,8 @@ public class Terrain extends Renderable {
 							if (((heightMap[curX][curZ] - lowestPoint) > landslideDeltaHeight) && (Math.random() < Configuration.TERRAIN_LANDSLIDE_CHANCE)) {
 								float deltaY = (heightMap[curX][curZ] - lowestPoint) / 2;
 								newHeightMap[curX][curZ] -= deltaY;
-								newHeightMap[curX][curZ+1] += deltaY;
+								distributeMovedMaterial(curX, curZ + 1, newHeightMap, deltaY);
+//								newHeightMap[curX][curZ+1] += deltaY;
 							} else {
 								newHeightMap[curX][curZ] -= Configuration.TERRAIN_EROSION_AMOUNT;
 								amountMoved += Configuration.TERRAIN_EROSION_AMOUNT;
@@ -117,7 +125,8 @@ public class Terrain extends Renderable {
 							if (((heightMap[curX][curZ] - lowestPoint) > landslideDeltaHeight) && (Math.random() < Configuration.TERRAIN_LANDSLIDE_CHANCE)) {
 								float deltaY = (heightMap[curX][curZ] - lowestPoint) / 2;
 								newHeightMap[curX][curZ] -= deltaY;
-								newHeightMap[curX-1][curZ] += deltaY;
+								distributeMovedMaterial(curX - 1, curZ, newHeightMap, deltaY);
+//								newHeightMap[curX-1][curZ] += deltaY;
 							} else {
 								newHeightMap[curX][curZ] -= Configuration.TERRAIN_EROSION_AMOUNT;
 								amountMoved += Configuration.TERRAIN_EROSION_AMOUNT;
@@ -209,13 +218,13 @@ public class Terrain extends Renderable {
 		for (int x = 0; x < Configuration.TERRAIN_SIZE;) {
 			int z = 0;
 			//First two initial points
-			vertexList.add(new Vertex(vertices[x+1][z], generateNormal(x + 1, z, vertices)));
-			vertexList.add(new Vertex(vertices[x][z], generateNormal(x, z, vertices)));
+			vertexList.add(generateVertex(x + 1, z, vertices));
+			vertexList.add(generateVertex(x, z, vertices));
 			
 			//Go one way with z
 			while (z < Configuration.TERRAIN_SIZE) {
-				vertexList.add(new Vertex(vertices[x+1][z+1], generateNormal(x + 1, z + 1, vertices)));
-				vertexList.add(new Vertex(vertices[x][z+1], generateNormal(x, z + 1, vertices)));
+				vertexList.add(generateVertex(x + 1, z + 1, vertices));
+				vertexList.add(generateVertex(x, z + 1, vertices));
 				z++;
 			}
 			z--;
@@ -224,13 +233,13 @@ public class Terrain extends Renderable {
 			x++;
 			
 			//Two points to start the second row
-			vertexList.add(new Vertex(vertices[x][z+1], generateNormal(x, z + 1, vertices)));
-			vertexList.add(new Vertex(vertices[x+1][z+1], generateNormal(x + 1, z + 1, vertices)));
+			vertexList.add(generateVertex(x, z + 1, vertices));
+			vertexList.add(generateVertex(x + 1, z + 1, vertices));
 			
 			//Go the other way
 			while (z > -1) {
-				vertexList.add(new Vertex(vertices[x][z], generateNormal(x, z, vertices)));
-				vertexList.add(new Vertex(vertices[x+1][z], generateNormal(x + 1, z, vertices)));
+				vertexList.add(generateVertex(x, z, vertices));
+				vertexList.add(generateVertex(x + 1, z, vertices));
 				z--;
 			}
 			
@@ -371,6 +380,23 @@ public class Terrain extends Renderable {
 		rc[3] = average(h5, h7, h8, heightMap[x][z]);
 		
 		return rc;
+	}
+	
+	private Vertex generateVertex(int x, int z, Vector3f[][] vertices) {
+		Vector3f normal = generateNormal(x, z, vertices);
+		
+		Vector3f color = colorGreen;
+		if (normal.y < 0.85) {
+			color = colorGrey;
+		}
+		if (vertices[x][z].y < 5.0f) {
+			color = colorSand;
+		}
+		if (vertices[x][z].y > 3000.0f) {
+			color = colorGrey;
+		}
+		
+		return new Vertex(vertices[x][z], normal, color);
 	}
 	
 	private Vector3f generateNormal(int x, int z, Vector3f[][] vertices) {

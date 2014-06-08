@@ -2,6 +2,7 @@
 
 in vec3 position;
 in vec3 normal;
+in vec3 vertexColor;
 
 //in vec2 textureCoords;
 
@@ -27,7 +28,7 @@ void main() {
 	//Directional light
 	float cosTheta = dot(normalize(normal), normalize(dirLightDirection));
 
-	color = dirLightColor*cosTheta;
+	color = vertexColor*dirLightColor*cosTheta;
 	
 	//Ambient light
 	color = clamp(color, 0.1, 1.0);

@@ -21,6 +21,7 @@ public class Renderer extends AbstractRenderer {
 
 	private int positionAttributeId;
 	private int normalAttributeId;
+	private int colorAttributeId;
 	
 	private int projectionMatrixUniformId;
 	private int viewMatrixUniformId;
@@ -105,10 +106,15 @@ public class Renderer extends AbstractRenderer {
 		if (-1 == positionAttributeId) {
 			throw new IllegalStateException("Could not find ID of the position vertex attribute");
 		}
-		//Find the ID of the nomal vertex attribute
+		//Find the ID of the normal vertex attribute
 		normalAttributeId = GL20.glGetAttribLocation(shaderProgramId, "normal");
 		if (-1 == normalAttributeId) {
 			throw new IllegalStateException("Could not find ID of the normal vertex attribute");
+		}
+		//Find the ID of the color vertex attribute
+		colorAttributeId = GL20.glGetAttribLocation(shaderProgramId, "vertexColor");
+		if (-1 == colorAttributeId) {
+			throw new IllegalStateException("Could not find ID of the color vertex attribute");
 		}
 		
 		//Find the ID for the projection matrix uniform
@@ -147,6 +153,8 @@ public class Renderer extends AbstractRenderer {
     GL20.glEnableVertexAttribArray(positionAttributeId);
     //Enable vertex attributes "normal" 
     GL20.glEnableVertexAttribArray(normalAttributeId);
+    //Enable vertex attributes "color" 
+    GL20.glEnableVertexAttribArray(colorAttributeId);
     
     //Set projection matrix
     GL20.glUniformMatrix4(projectionMatrixUniformId, false, projectionMatrixBuffer);
@@ -161,10 +169,12 @@ public class Renderer extends AbstractRenderer {
     for (Renderable renderable : renderables) {
       //Bind data buffer
       GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, renderable.getBufferId());
-  		//Point to position. Size is 3 * 4 bytes. String is position (3 floats) + normal (3 floats) * 4 bytes. Offset is 0
-      GL20.glVertexAttribPointer(positionAttributeId, 3, GL11.GL_FLOAT, true, 6 * 4, 0);
-  		//Point to normal. Size is 3 * 4 bytes. Stride is position (3 floats) + normal (3 floats) * 4 bytes. Offset is position (3 floats) * 4 bytes
-      GL20.glVertexAttribPointer(normalAttributeId, 3, GL11.GL_FLOAT, false, 6 * 4, 3 * 4);
+  		//Point to position. Size is 3 * 4 bytes. Stride is position (3 floats) + normal (3 floats) + color (3 floats) * 4 bytes. Offset is 0
+      GL20.glVertexAttribPointer(positionAttributeId, 3, GL11.GL_FLOAT, true, 9 * 4, 0);
+  		//Point to normal. Size is 3 * 4 bytes. Stride is position (3 floats) + normal (3 floats) + color (3 floats) * 4 bytes. Offset is position (3 floats) * 4 bytes
+      GL20.glVertexAttribPointer(normalAttributeId, 3, GL11.GL_FLOAT, false, 9 * 4, 3 * 4);
+  		//Point to color. Size is 3 * 4 bytes. Stride is position (3 floats) + normal (3 floats) + color (3 floats) * 4 bytes. Offset is position (3 floats) + normal (3 floats) * 4 bytes
+      GL20.glVertexAttribPointer(colorAttributeId, 3, GL11.GL_FLOAT, false, 9 * 4, 6 * 4);
   		
   		//Draw
   		GL11.glDrawArrays(GL11.GL_TRIANGLE_STRIP, 0, renderable.getVertices().size());
@@ -173,6 +183,7 @@ public class Renderer extends AbstractRenderer {
 		//Disable vertex attribute arrays
 		GL20.glDisableVertexAttribArray(positionAttributeId);
 		GL20.glDisableVertexAttribArray(normalAttributeId);
+		GL20.glDisableVertexAttribArray(colorAttributeId);
 	}
 	
 	public void registerRenderable(Renderable renderable) {
@@ -184,7 +195,7 @@ public class Renderer extends AbstractRenderer {
 		renderable.setBufferId(GL15.glGenBuffers());
 		GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, renderable.getBufferId());
 		//Reserve enough space for position.
-		FloatBuffer data = BufferUtils.createFloatBuffer((vertices.size() * 6));	// 3 floats for position + 3 floats for normal
+		FloatBuffer data = BufferUtils.createFloatBuffer((vertices.size() * 9));	// 3 floats for position + 3 floats for normal + 3 floats for color
 		for (Vertex vertex : vertices) {
 			vertex.store(data);
 		}
