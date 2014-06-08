@@ -140,8 +140,37 @@ public class Terrain extends Renderable {
 	}
 	
 	private void createMesh(Renderer renderer) {
-		List<Vertex> vertices = this.getVertices();
-		vertices.clear();
+		Vector3f[][] vertices = new Vector3f[Configuration.TERRAIN_SIZE+1][Configuration.TERRAIN_SIZE+1];
+		
+		/*
+		 * First we must generate the array of vertices and normals. Later we will pick from these when we generate the vertex list.
+		 * 
+		 * To generate each vertex height, we average the heights of the surrounding squares, in this pattern:
+		 * 
+		 * H1|H2
+		 * --+--		We are interested in the height in the middle, at x,z
+		 * H3|h4
+		 * 
+		 * The squares are:
+		 * H1: Square at x-1,z-1
+		 * H2: Square at x,z-1
+		 * H3: Square at x-1,z
+		 * H4: Square at x+1,z
+		 * 
+		 */
+		for (int x = 0; x < Configuration.TERRAIN_SIZE+1; x++) {
+			for (int z = 0; z < Configuration.TERRAIN_SIZE+1; z++) {
+				float h1 = heightMap[x!=0?x-1:x][z!=0?z-1:z];
+				float h2 = heightMap[x!=Configuration.TERRAIN_SIZE?x:x-1][z!=0?z-1:z]; 
+				float h3 = heightMap[x!=0?x-1:x][z!=Configuration.TERRAIN_SIZE?z:z-1]; 
+				float h4 = heightMap[x!=Configuration.TERRAIN_SIZE?x:x-1][z!=Configuration.TERRAIN_SIZE?z:z-1]; 
+				float height = average(h1, h2, h3, h4);
+				vertices[x][z] = new Vector3f(x * Configuration.TERRAIN_TILE_SIZE, height, z * Configuration.TERRAIN_TILE_SIZE);
+			}
+		}
+		
+		List<Vertex> vertexList = this.getVertices();
+		vertexList.clear();
 		
 		/*
 		 * To make a triangle strip, we need to go back and forth, adding one strip each way.
@@ -177,26 +206,16 @@ public class Terrain extends Renderable {
 		 * x1z2 = Corner towards x-1,z+1
 		 * 
 		 */
-		float x1z1, x2z1, x1z2, x2z2;
-		float[] cornerValues;
 		for (int x = 0; x < Configuration.TERRAIN_SIZE;) {
 			int z = 0;
 			//First two initial points
-			cornerValues = generateCornerValues(x, z);
-			//TODO
-			x1z1 = cornerValues[0];
-			x2z1 = cornerValues[1];
-			vertices.add(new Vertex(new Vector3f((x + 1) * Configuration.TERRAIN_TILE_SIZE, x2z1, z * Configuration.TERRAIN_TILE_SIZE)));
-			vertices.add(new Vertex(new Vector3f(x * Configuration.TERRAIN_TILE_SIZE, x1z1, z * Configuration.TERRAIN_TILE_SIZE)));
+			vertexList.add(new Vertex(vertices[x+1][z], generateNormal(x + 1, z, vertices)));
+			vertexList.add(new Vertex(vertices[x][z], generateNormal(x, z, vertices)));
 			
 			//Go one way with z
-			//TODO
 			while (z < Configuration.TERRAIN_SIZE) {
-				cornerValues = generateCornerValues(x, z);
-				x1z2 = cornerValues[2];
-				x2z2 = cornerValues[3];
-				vertices.add(new Vertex(new Vector3f((x + 1) * Configuration.TERRAIN_TILE_SIZE, x2z2, (z + 1) * Configuration.TERRAIN_TILE_SIZE)));
-				vertices.add(new Vertex(new Vector3f(x * Configuration.TERRAIN_TILE_SIZE, x1z2, (z + 1) * Configuration.TERRAIN_TILE_SIZE)));
+				vertexList.add(new Vertex(vertices[x+1][z+1], generateNormal(x + 1, z + 1, vertices)));
+				vertexList.add(new Vertex(vertices[x][z+1], generateNormal(x, z + 1, vertices)));
 				z++;
 			}
 			z--;
@@ -205,21 +224,13 @@ public class Terrain extends Renderable {
 			x++;
 			
 			//Two points to start the second row
-			//TODO
-			cornerValues = generateCornerValues(x, z);
-			x2z2 = cornerValues[3];
-			x1z2 = cornerValues[2];
-			vertices.add(new Vertex(new Vector3f(x * Configuration.TERRAIN_TILE_SIZE, x1z2, (z + 1) * Configuration.TERRAIN_TILE_SIZE)));
-			vertices.add(new Vertex(new Vector3f((x + 1) * Configuration.TERRAIN_TILE_SIZE, x2z2, (z + 1) * Configuration.TERRAIN_TILE_SIZE)));
+			vertexList.add(new Vertex(vertices[x][z+1], generateNormal(x, z + 1, vertices)));
+			vertexList.add(new Vertex(vertices[x+1][z+1], generateNormal(x + 1, z + 1, vertices)));
 			
 			//Go the other way
-			//TODO
 			while (z > -1) {
-				cornerValues = generateCornerValues(x, z);
-				x2z1 = cornerValues[1];
-				x1z1 = cornerValues[0];
-				vertices.add(new Vertex(new Vector3f(x * Configuration.TERRAIN_TILE_SIZE, x1z1, z * Configuration.TERRAIN_TILE_SIZE)));
-				vertices.add(new Vertex(new Vector3f((x + 1) * Configuration.TERRAIN_TILE_SIZE, x2z1, z * Configuration.TERRAIN_TILE_SIZE)));
+				vertexList.add(new Vertex(vertices[x][z], generateNormal(x, z, vertices)));
+				vertexList.add(new Vertex(vertices[x+1][z], generateNormal(x + 1, z, vertices)));
 				z--;
 			}
 			
@@ -360,6 +371,23 @@ public class Terrain extends Renderable {
 		rc[3] = average(h5, h7, h8, heightMap[x][z]);
 		
 		return rc;
+	}
+	
+	private Vector3f generateNormal(int x, int z, Vector3f[][] vertices) {
+		Vector3f rc = new Vector3f();
+		
+		rc.y = (float)z / 64.0f;
+
+		float height = vertices[x][z].y;
+		Vector3f v1 = new Vector3f(Configuration.TERRAIN_TILE_SIZE, vertices[x!=Configuration.TERRAIN_SIZE?x+1:x][z].y - height, 0.0f);	//Eastbound vector
+		Vector3f v2 = new Vector3f(0.0f, vertices[x][z!=Configuration.TERRAIN_SIZE?z+1:z].y - height, Configuration.TERRAIN_TILE_SIZE);	//Southbound vector
+		Vector3f v3 = new Vector3f(-Configuration.TERRAIN_TILE_SIZE, vertices[x!=0?x-1:x][z].y - height, 0.0f);	//Westbound vector
+		Vector3f v4 = new Vector3f(0.0f, vertices[x][z!=0?z-1:z].y - height, -Configuration.TERRAIN_TILE_SIZE);	//Northbound vector
+		
+		Vector3f v5 = Vector3f.cross(v2, v1, null);
+		Vector3f v6 = Vector3f.cross(v4, v3, null);
+		
+		return new Vector3f(v5.x + v6.x, v5.y + v6.y, v5.z + v6.z).normalise(null);
 	}
 	
 	private void distributeMovedMaterial(int curX, int curZ, float[][] newHeightMap, float amountMoved) {
