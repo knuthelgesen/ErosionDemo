@@ -88,7 +88,6 @@ public class App extends AbstractApp
   	while (!inputHandler.isCloseRequested()) {
   		//Run erosion "simulation" (one step)
   		terrain.runErsionStep(renderer);
-  		
   		if (inputHandler.getKeyStatus()[Keyboard.KEY_LSHIFT] || inputHandler.getKeyStatus()[Keyboard.KEY_RSHIFT]) {
     		if (inputHandler.getKeyStatus()[Keyboard.KEY_LEFT]) {
     			camera.rotateCamera(new Vector3f(0.0f, -Configuration.CAMERA_ROTATION_SPEED, 0.0f));

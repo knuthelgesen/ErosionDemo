@@ -20,9 +20,13 @@ public class Renderer extends AbstractRenderer {
 	private int shaderProgramId;
 
 	private int positionAttributeId;
+	private int normalAttributeId;
 	
 	private int projectionMatrixUniformId;
 	private int viewMatrixUniformId;
+	
+	private int dirLightColorUniformId;
+	private int dirLightDirectionUniformId;
 	
 	/**
 	 * Initialize the renderer, including all shaders
@@ -32,7 +36,7 @@ public class Renderer extends AbstractRenderer {
 		 * GL context
 		 */
 		GL11.glViewport(0, 0, Configuration.WINDOW_WIDTH, Configuration.WINDOW_HEIGTH);
-		GL11.glPolygonMode(GL11.GL_FRONT_AND_BACK, GL11.GL_LINE);
+//		GL11.glPolygonMode(GL11.GL_FRONT_AND_BACK, GL11.GL_LINE);
 
 		GL11.glEnable(GL11.GL_BLEND);
 		GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
@@ -49,6 +53,8 @@ public class Renderer extends AbstractRenderer {
 		//Enable texturing
 		GL11.glEnable(GL11.GL_TEXTURE_2D);
 
+		GL11.glEnable(GL11.GL_DEPTH_TEST);
+		
 		checkGL();
 		
 		/*
@@ -97,18 +103,33 @@ public class Renderer extends AbstractRenderer {
 		//Find the ID of the position vertex attribute
 		positionAttributeId = GL20.glGetAttribLocation(shaderProgramId, "position");
 		if (-1 == positionAttributeId) {
-			throw new IllegalStateException("Could not find ID of position vertex attribute");
+			throw new IllegalStateException("Could not find ID of the position vertex attribute");
+		}
+		//Find the ID of the nomal vertex attribute
+		normalAttributeId = GL20.glGetAttribLocation(shaderProgramId, "normal");
+		if (-1 == normalAttributeId) {
+			throw new IllegalStateException("Could not find ID of the normal vertex attribute");
 		}
 		
 		//Find the ID for the projection matrix uniform
 		projectionMatrixUniformId = GL20.glGetUniformLocation(shaderProgramId, "projectionMatrix");
-		if (-1 == positionAttributeId) {
-			throw new IllegalStateException("Could not find ID of projection matrix uniform");
+		if (-1 == projectionMatrixUniformId) {
+			throw new IllegalStateException("Could not find ID of the projection matrix uniform");
 		}
 		//Find the ID for the view matrix uniform
 		viewMatrixUniformId = GL20.glGetUniformLocation(shaderProgramId, "viewMatrix");
-		if (-1 == positionAttributeId) {
-			throw new IllegalStateException("Could not find ID of view matrix uniform");
+		if (-1 == viewMatrixUniformId) {
+			throw new IllegalStateException("Could not find ID of the view matrix uniform");
+		}
+		//Find the ID for the directional light color uniform
+		dirLightColorUniformId = GL20.glGetUniformLocation(shaderProgramId, "dirLightColor");
+		if (-1 == dirLightColorUniformId) {
+			throw new IllegalStateException("Could not find ID of the directional light color uniform");
+		}
+		//Find the ID for the directional light direction uniform
+		dirLightDirectionUniformId = GL20.glGetUniformLocation(shaderProgramId, "dirLightDirection");
+		if (-1 == dirLightDirectionUniformId) {
+			throw new IllegalStateException("Could not find ID of the directional light direction");
 		}
 	}
 	
@@ -124,16 +145,26 @@ public class Renderer extends AbstractRenderer {
 
     //Enable vertex attributes "position" 
     GL20.glEnableVertexAttribArray(positionAttributeId);
+    //Enable vertex attributes "normal" 
+    GL20.glEnableVertexAttribArray(normalAttributeId);
     
     //Set projection matrix
     GL20.glUniformMatrix4(projectionMatrixUniformId, false, projectionMatrixBuffer);
     //Set view matrix
     GL20.glUniformMatrix4(viewMatrixUniformId, false, viewMatrixBuffer);
     
+    //Set directional light color
+    GL20.glUniform3f(dirLightColorUniformId, 1.0f, 1.0f, 1.0f);
+    //Set directional light direction
+    GL20.glUniform3f(dirLightDirectionUniformId, 0.5f, 1.0f, 0.5f);
+    
     for (Renderable renderable : renderables) {
       //Bind data buffer
       GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, renderable.getBufferId());
-  		GL20.glVertexAttribPointer(positionAttributeId, 3, GL11.GL_FLOAT, false, 3 * 4, 0);	//Each vertex is 5 floats * 4 bytes
+  		//Point to position. Size is 3 * 4 bytes. String is position (3 floats) + normal (3 floats) * 4 bytes. Offset is 0
+      GL20.glVertexAttribPointer(positionAttributeId, 3, GL11.GL_FLOAT, true, 6 * 4, 0);
+  		//Point to normal. Size is 3 * 4 bytes. Stride is position (3 floats) + normal (3 floats) * 4 bytes. Offset is position (3 floats) * 4 bytes
+      GL20.glVertexAttribPointer(normalAttributeId, 3, GL11.GL_FLOAT, false, 6 * 4, 3 * 4);
   		
   		//Draw
   		GL11.glDrawArrays(GL11.GL_TRIANGLE_STRIP, 0, renderable.getVertices().size());
@@ -141,6 +172,7 @@ public class Renderer extends AbstractRenderer {
     
 		//Disable vertex attribute arrays
 		GL20.glDisableVertexAttribArray(positionAttributeId);
+		GL20.glDisableVertexAttribArray(normalAttributeId);
 	}
 	
 	public void registerRenderable(Renderable renderable) {
@@ -152,7 +184,7 @@ public class Renderer extends AbstractRenderer {
 		renderable.setBufferId(GL15.glGenBuffers());
 		GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, renderable.getBufferId());
 		//Reserve enough space for position.
-		FloatBuffer data = BufferUtils.createFloatBuffer((vertices.size() * 3));
+		FloatBuffer data = BufferUtils.createFloatBuffer((vertices.size() * 6));	// 3 floats for position + 3 floats for normal
 		for (Vertex vertex : vertices) {
 			vertex.store(data);
 		}
