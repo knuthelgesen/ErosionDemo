@@ -20,7 +20,7 @@ public class Terrain extends Renderable {
 		
 		for (int x = 0; x < Configuration.TERRAIN_SIZE; x++) {
 			for (int z = 0; z < Configuration.TERRAIN_SIZE; z++) {
-				heightMap[x][z] = (float)(Math.sin(((double)x / Configuration.TERRAIN_SIZE)* Math.PI) * Math.sin(((double)z / Configuration.TERRAIN_SIZE)* Math.PI) * 4500) - 250.0f + random.nextFloat() * 300;
+				heightMap[x][z] = (float)(Math.sin(((double)x / Configuration.TERRAIN_SIZE)* Math.PI) * Math.sin(((double)z / Configuration.TERRAIN_SIZE)* Math.PI) * 4500) - 250.0f + random.nextFloat() * 100;
 			}
 		}
 	}
@@ -375,52 +375,6 @@ public class Terrain extends Renderable {
 	
 	private Vector3f generateNormal(int x, int z, Vector3f[][] vertices) {
 		Vector3f rc = new Vector3f();
-		
-//		Vector3f v1 = new Vector3f(x * Configuration.TERRAIN_TILE_SIZE, cornerValues[0], z * Configuration.TERRAIN_TILE_SIZE);
-//		Vector3f v2 = new Vector3f(x * Configuration.TERRAIN_TILE_SIZE + Configuration.TERRAIN_TILE_SIZE, cornerValues[1], z * Configuration.TERRAIN_TILE_SIZE);
-//		Vector3f v3 = new Vector3f(x * Configuration.TERRAIN_TILE_SIZE + Configuration.TERRAIN_TILE_SIZE, cornerValues[2], z * Configuration.TERRAIN_TILE_SIZE + Configuration.TERRAIN_TILE_SIZE);
-//		Vector3f v4 = new Vector3f(x * Configuration.TERRAIN_TILE_SIZE, cornerValues[3], z * Configuration.TERRAIN_TILE_SIZE + Configuration.TERRAIN_TILE_SIZE);
-//		Vector3f v1 = new Vector3f(0, cornerValues[0], 0);
-//		Vector3f v2 = new Vector3f(1, cornerValues[1], 0);
-//		Vector3f v3 = new Vector3f(1, cornerValues[2], 1);
-//		Vector3f v4 = new Vector3f(0, cornerValues[3], 1);
-
-//		rc.x += (v2.y - v1.y) * (v2.z + v1.z); 
-//		rc.y += (v2.z - v1.z) * (v2.x + v1.x); 
-//		rc.z += (v2.x - v1.x) * (v2.y + v1.y); 
-//		
-//		rc.x += (v1.y - v4.y) * (v1.z + v4.z); 
-//		rc.y += (v1.z - v4.z) * (v1.x + v4.x); 
-//		rc.z += (v1.x - v4.x) * (v1.y + v4.y); 
-//		
-//		rc.x += (v4.y - v3.y) * (v4.z + v3.z); 
-//		rc.y += (v4.z - v3.z) * (v4.x + v3.x); 
-//		rc.z += (v4.x - v3.x) * (v4.y + v3.y); 
-//		
-//		rc.x += (v3.y - v2.y) * (v3.z + v2.z); 
-//		rc.y += (v3.z - v2.z) * (v3.x + v2.x); 
-//		rc.z += (v3.x - v2.x) * (v3.y + v2.y); 
-//		
-//		rc.normalise();
-//		
-//		Vector3f vA = new Vector3f();
-//		Vector3f vB = new Vector3f();
-//		Vector3f.sub(v2, v1, vA);
-//		Vector3f.sub(v3, v1, vB);
-//		
-//		Vector3f.cross(vA, vB, destNormal);
-//		rc.x = 0.0f;
-//		rc.y = Math.max(0.1f, ((float)x / 16.0f));
-//		rc.y = Math.min(1.0f, rc.y);
-//		rc.z = 0.0f;
-//		destNormal.normalise();
-
-//		float vX = (heightMap[x==Configuration.TERRAIN_SIZE-1?x:x+1][z]) - (heightMap[x==0?x:x-1][z]);
-//		float vZ = (heightMap[x][z==Configuration.TERRAIN_SIZE-1?z:z+1]) - (heightMap[x][z==0?z:z-1]);
-		
-//		rc = Vector3f.cross(new Vector3f(Configuration.TERRAIN_SIZE * 2, vX, 0.0f), new Vector3f(0.0f, vZ, Configuration.TERRAIN_SIZE * 2), null);
-//		rc = Vector3f.cross(new Vector3f(0.0f, vZ, Configuration.TERRAIN_SIZE * 2), new Vector3f(Configuration.TERRAIN_SIZE * 2, vX, 0.0f), null);
-//		rc.normalise();
 		
 		rc.y = (float)z / 64.0f;
 

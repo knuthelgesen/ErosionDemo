@@ -29,5 +29,7 @@ void main() {
 
 	color = dirLightColor*cosTheta;
 	
+	//Ambient light
+	color = clamp(color, 0.1, 1.0);
 //	textureCoordinates = textureCoords;
 }
