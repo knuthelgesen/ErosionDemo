@@ -16,6 +16,7 @@ import org.lwjgl.util.vector.Vector3f;
 import no.plasmid.erosion.im.Camera;
 import no.plasmid.erosion.im.Renderable;
 import no.plasmid.erosion.im.Terrain;
+import no.plasmid.erosion.im.Water;
 import no.plasmid.lib.AbstractApp;
 
 /**
@@ -70,10 +71,14 @@ public class App extends AbstractApp
   private void runApplication() {
   	Camera camera = new Camera();
   	
+  	List<Renderable> renderables = new ArrayList<Renderable>();
   	Terrain terrain = new Terrain();
   	terrain.createInitialTerrain();
-  	List<Renderable> renderables = new ArrayList<Renderable>();
   	renderables.add(terrain);
+  	Water water = new Water();
+  	water.createMesh(renderer);
+  	renderables.add(water);
+  	
   	
   	//Create the projection matrix that is used for rendering
   	Matrix4f projectionMatrix = renderer.calculateProjectionMatrix(Configuration.WINDOW_WIDTH, Configuration.WINDOW_HEIGTH,

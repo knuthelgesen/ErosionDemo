@@ -42,7 +42,7 @@ public class Renderer extends AbstractRenderer {
 		GL11.glEnable(GL11.GL_BLEND);
 		GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
 		
-		GL11.glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+		GL11.glClearColor(0.4f, 0.4f, 1.0f, 1.0f);
 		
 		GL11.glCullFace(GL11.GL_BACK);
 		GL11.glEnable(GL11.GL_CULL_FACE);

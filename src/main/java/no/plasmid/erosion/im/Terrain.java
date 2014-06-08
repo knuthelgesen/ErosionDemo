@@ -386,10 +386,10 @@ public class Terrain extends Renderable {
 		Vector3f normal = generateNormal(x, z, vertices);
 		
 		Vector3f color = colorGreen;
-		if (normal.y < 0.85) {
+		if (normal.y < 0.90) {
 			color = colorGrey;
 		}
-		if (vertices[x][z].y < 5.0f) {
+		if (vertices[x][z].y < 10.0f) {
 			color = colorSand;
 		}
 		if (vertices[x][z].y > 3000.0f) {
