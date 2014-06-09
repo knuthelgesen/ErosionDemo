@@ -1,11 +1,12 @@
 package no.plasmid.erosion.im;
 
 import java.util.List;
-import java.util.Random;
+//import java.util.Random;
 
 import org.lwjgl.util.vector.Vector3f;
 
 import no.plasmid.erosion.Configuration;
+import no.plasmid.erosion.PerlinNoise;
 import no.plasmid.erosion.Renderer;
 
 public class Terrain extends Renderable {
@@ -20,12 +21,16 @@ public class Terrain extends Renderable {
 		heightMap = new float[Configuration.TERRAIN_SIZE][Configuration.TERRAIN_SIZE];
 
 		//To seed the erosion
-		Random random = new Random(Configuration.TERRAIN_NOISE_RANDOM_SEED);
+//		Random random = new Random(Configuration.TERRAIN_NOISE_RANDOM_SEED);
+		PerlinNoise perlinNoise = new PerlinNoise(Configuration.TERRAIN_NOISE_PERSISTENCE, Configuration.TERRAIN_NOISE_FREQUENCY,
+				Configuration.TERRAIN_NOISE_AMPLITUDE, Configuration.TERRAIN_NOISE_OCTAVES, Configuration.TERRAIN_NOISE_RANDOM_SEED);
 		
 		for (int x = 0; x < Configuration.TERRAIN_SIZE; x++) {
 			for (int z = 0; z < Configuration.TERRAIN_SIZE; z++) {
-				heightMap[x][z] = (float)(Math.sin(((double)x / Configuration.TERRAIN_SIZE)* Math.PI) * Math.sin(((double)z / Configuration.TERRAIN_SIZE)* Math.PI) * 4000) - 550.0f + random.nextFloat() * 100;
-//				heightMap[x][z] = (float)x * 50 - 550.0f + random.nextFloat() * 100;
+//				heightMap[x][z] = (float)(Math.sin(((double)x / Configuration.TERRAIN_SIZE)* Math.PI) * Math.sin(((double)z / Configuration.TERRAIN_SIZE)* Math.PI) * 4000) - 550.0f + random.nextFloat() * 100;
+				heightMap[x][z] = (float)(Math.sin(((double)x / Configuration.TERRAIN_SIZE)* Math.PI) * Math.sin(((double)z / Configuration.TERRAIN_SIZE)* Math.PI) * 5000)
+						+ (float)(Math.sin(((double)x / Configuration.TERRAIN_SIZE)* Math.PI) * Math.sin(((double)z / Configuration.TERRAIN_SIZE)* Math.PI) * perlinNoise.getHeight(x, z) * 200) + 
+						- 550.0f;
 			}
 		}
 	}
@@ -271,7 +276,7 @@ public class Terrain extends Renderable {
 	 * @param z
 	 * @return and array containing the corner values as described above
 	 */
-	private float[] generateCornerValues(int x, int z) {
+//	private float[] generateCornerValues(int x, int z) {
 		/*
 		 * Map of all surrounding heights.
 		 * 
@@ -291,96 +296,96 @@ public class Terrain extends Renderable {
 		 * rc[3] = x1z2 = Corner towards x-1,z+1
 		 * 
 		 */
-		float[] rc = new float[4];
-		
-		float h1, h2, h3, h4, h5, h6, h7, h8;
-		//H1
-		if (x == 0) {
-			if (z == 0) {
-				h1 = heightMap[x][z];
-			} else {
-				h1 = heightMap[x][z-1];
-			}
-		} else {
-			if (z == 0) {
-				h1 = heightMap[x-1][z];
-			} else {
-				h1 = heightMap[x-1][z-1];
-			}
-		}
-		//H2
-		if (z == 0) {
-			h2 = heightMap[x][z];
-		} else {
-			h2 = heightMap[x][z-1];
-		}
-		//H3
-		if (x == Configuration.TERRAIN_SIZE - 1) {
-			if (z == 0) {
-				h3 = heightMap[x][z];
-			} else {
-				h3 = heightMap[x][z-1];
-			}
-		} else {
-			if (z == 0) {
-				h3 = heightMap[x+1][z];
-			} else {
-				h3 = heightMap[x+1][z-1];
-			}
-		}
-		//H4
-		if (x == 0) {
-			h4 = heightMap[x][z];
-		} else {
-			h4 = heightMap[x-1][z];
-		}
-		//H5
-		if (x == Configuration.TERRAIN_SIZE - 1) {
-			h5 = heightMap[x][z];
-		} else {
-			h5 = heightMap[x+1][z];
-		}
-		//H6
-		if (x == 0) {
-			if (z == Configuration.TERRAIN_SIZE - 1) {
-				h6 = heightMap[x][z];
-			} else {
-				h6 = heightMap[x][z+1];
-			}
-		} else {
-			if (z == Configuration.TERRAIN_SIZE - 1) {
-				h6 = heightMap[x-1][z];
-			} else {
-				h6 = heightMap[x-1][z+1];
-			}
-		}
-		//H7
-		if (z == Configuration.TERRAIN_SIZE - 1) {
-			h7 = heightMap[x][z];
-		} else {
-			h7 = heightMap[x][z+1];
-		}
-		//H8
-		if (x == Configuration.TERRAIN_SIZE - 1) {
-			if (z == Configuration.TERRAIN_SIZE - 1) {
-				h8 = heightMap[x][z];
-			} else {
-				h8 = heightMap[x][z+1];
-			}
-		} else {
-			if (z == Configuration.TERRAIN_SIZE - 1) {
-				h8 = heightMap[x+1][z];
-			} else {
-				h8 = heightMap[x+1][z+1];
-			}
-		}
-		rc[0] = average(h1, h2, h4, heightMap[x][z]);
-		rc[1] = average(h2, h3, h5, heightMap[x][z]);
-		rc[2] = average(h4, h6, h7, heightMap[x][z]);
-		rc[3] = average(h5, h7, h8, heightMap[x][z]);
-		
-		return rc;
-	}
+//		float[] rc = new float[4];
+//		
+//		float h1, h2, h3, h4, h5, h6, h7, h8;
+//		//H1
+//		if (x == 0) {
+//			if (z == 0) {
+//				h1 = heightMap[x][z];
+//			} else {
+//				h1 = heightMap[x][z-1];
+//			}
+//		} else {
+//			if (z == 0) {
+//				h1 = heightMap[x-1][z];
+//			} else {
+//				h1 = heightMap[x-1][z-1];
+//			}
+//		}
+//		//H2
+//		if (z == 0) {
+//			h2 = heightMap[x][z];
+//		} else {
+//			h2 = heightMap[x][z-1];
+//		}
+//		//H3
+//		if (x == Configuration.TERRAIN_SIZE - 1) {
+//			if (z == 0) {
+//				h3 = heightMap[x][z];
+//			} else {
+//				h3 = heightMap[x][z-1];
+//			}
+//		} else {
+//			if (z == 0) {
+//				h3 = heightMap[x+1][z];
+//			} else {
+//				h3 = heightMap[x+1][z-1];
+//			}
+//		}
+//		//H4
+//		if (x == 0) {
+//			h4 = heightMap[x][z];
+//		} else {
+//			h4 = heightMap[x-1][z];
+//		}
+//		//H5
+//		if (x == Configuration.TERRAIN_SIZE - 1) {
+//			h5 = heightMap[x][z];
+//		} else {
+//			h5 = heightMap[x+1][z];
+//		}
+//		//H6
+//		if (x == 0) {
+//			if (z == Configuration.TERRAIN_SIZE - 1) {
+//				h6 = heightMap[x][z];
+//			} else {
+//				h6 = heightMap[x][z+1];
+//			}
+//		} else {
+//			if (z == Configuration.TERRAIN_SIZE - 1) {
+//				h6 = heightMap[x-1][z];
+//			} else {
+//				h6 = heightMap[x-1][z+1];
+//			}
+//		}
+//		//H7
+//		if (z == Configuration.TERRAIN_SIZE - 1) {
+//			h7 = heightMap[x][z];
+//		} else {
+//			h7 = heightMap[x][z+1];
+//		}
+//		//H8
+//		if (x == Configuration.TERRAIN_SIZE - 1) {
+//			if (z == Configuration.TERRAIN_SIZE - 1) {
+//				h8 = heightMap[x][z];
+//			} else {
+//				h8 = heightMap[x][z+1];
+//			}
+//		} else {
+//			if (z == Configuration.TERRAIN_SIZE - 1) {
+//				h8 = heightMap[x+1][z];
+//			} else {
+//				h8 = heightMap[x+1][z+1];
+//			}
+//		}
+//		rc[0] = average(h1, h2, h4, heightMap[x][z]);
+//		rc[1] = average(h2, h3, h5, heightMap[x][z]);
+//		rc[2] = average(h4, h6, h7, heightMap[x][z]);
+//		rc[3] = average(h5, h7, h8, heightMap[x][z]);
+//		
+//		return rc;
+//	}
 	
 	private Vertex generateVertex(int x, int z, Vector3f[][] vertices) {
 		Vector3f normal = generateNormal(x, z, vertices);
