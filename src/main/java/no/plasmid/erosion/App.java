@@ -74,6 +74,7 @@ public class App extends AbstractApp
   	List<Renderable> renderables = new ArrayList<Renderable>();
   	Terrain terrain = new Terrain();
   	terrain.createInitialTerrain();
+  	terrain.createMesh(renderer);
   	renderables.add(terrain);
   	Water water = new Water();
   	water.createMesh(renderer);
@@ -91,8 +92,11 @@ public class App extends AbstractApp
   	FloatBuffer vmBuffer = BufferUtils.createFloatBuffer(16);
   	
   	while (!inputHandler.isCloseRequested()) {
-  		//Run erosion "simulation" (one step)
-  		terrain.runErsionStep(renderer);
+  		if (terrain.isErosionFinished()) {
+  			System.out.println("Creating new mesh");
+  			terrain.createMesh(renderer);
+  		}
+  		
   		if (inputHandler.getKeyStatus()[Keyboard.KEY_LSHIFT] || inputHandler.getKeyStatus()[Keyboard.KEY_RSHIFT]) {
     		if (inputHandler.getKeyStatus()[Keyboard.KEY_LEFT]) {
     			camera.rotateCamera(new Vector3f(0.0f, -Configuration.CAMERA_ROTATION_SPEED, 0.0f));
@@ -124,6 +128,11 @@ public class App extends AbstractApp
     		}
     		if (inputHandler.getKeyStatus()[Keyboard.KEY_PRIOR]) {
     			camera.moveCamera(new Vector3f(0.0f, -Configuration.CAMERA_MOVEMENT_SPEED, 0.0f));
+    		}
+    		if (inputHandler.getKeyStatus()[Keyboard.KEY_SPACE] && !terrain.isErosionStarted()) {
+    			System.out.println("Run " + Configuration.TERRAIN_EROSION_STEPS + " erosion steps");
+    			terrain.triggerErosions();
+    			inputHandler.getKeyStatus()[Keyboard.KEY_SPACE] = false;
     		}
   		}
   		

@@ -11,11 +11,13 @@ import no.plasmid.erosion.Renderer;
 
 public class Terrain extends Renderable {
 
-	private Vector3f colorGreen = new Vector3f(0.0f, 0.7f, 0.1f);
-	private Vector3f colorSand = new Vector3f(0.85f, 0.6f, 0.0f);
-	private Vector3f colorGrey = new Vector3f(0.65f, 0.65f, 0.65f);
+	private static final Vector3f COLOR_GRAS = new Vector3f(0.0f, 0.7f, 0.1f);
+	private static final Vector3f COLOR_SAND = new Vector3f(0.85f, 0.6f, 0.0f);
+	private static final Vector3f COLOR_STONE = new Vector3f(0.65f, 0.65f, 0.65f);
 	
 	private float[][] heightMap;
+	private boolean erosionStarted;
+	private boolean erosionFinished;
 
 	public void createInitialTerrain() {
 		heightMap = new float[Configuration.TERRAIN_SIZE][Configuration.TERRAIN_SIZE];
@@ -35,7 +37,20 @@ public class Terrain extends Renderable {
 		}
 	}
 
-	public void runErsionStep(Renderer renderer) {
+	public void triggerErosions() {
+		erosionStarted = true;
+		Thread t = new Thread() {
+
+			@Override
+			public void run() {
+				runErsions();
+			}
+			
+		};
+		t.start();
+	}
+	
+	private void runErsions() {
 		/*
 		 * Do the erosion
 		 */
@@ -95,7 +110,6 @@ public class Terrain extends Renderable {
 								float deltaY = (heightMap[curX][curZ] - lowestPoint) / 2;
 								newHeightMap[curX][curZ] -= deltaY;
 								distributeMovedMaterial(curX, curZ - 1, newHeightMap, deltaY);
-//								newHeightMap[curX][curZ-1] += deltaY;
 							} else {
 								newHeightMap[curX][curZ] -= Configuration.TERRAIN_EROSION_AMOUNT;
 								amountMoved += Configuration.TERRAIN_EROSION_AMOUNT;
@@ -107,7 +121,6 @@ public class Terrain extends Renderable {
 								float deltaY = (heightMap[curX][curZ] - lowestPoint) / 2;
 								newHeightMap[curX][curZ] -= deltaY;
 								distributeMovedMaterial(curX + 1, curZ, newHeightMap, deltaY);
-//								newHeightMap[curX+1][curZ] += deltaY;
 							} else {
 								newHeightMap[curX][curZ] -= Configuration.TERRAIN_EROSION_AMOUNT;
 								amountMoved += Configuration.TERRAIN_EROSION_AMOUNT;
@@ -119,7 +132,6 @@ public class Terrain extends Renderable {
 								float deltaY = (heightMap[curX][curZ] - lowestPoint) / 2;
 								newHeightMap[curX][curZ] -= deltaY;
 								distributeMovedMaterial(curX, curZ + 1, newHeightMap, deltaY);
-//								newHeightMap[curX][curZ+1] += deltaY;
 							} else {
 								newHeightMap[curX][curZ] -= Configuration.TERRAIN_EROSION_AMOUNT;
 								amountMoved += Configuration.TERRAIN_EROSION_AMOUNT;
@@ -131,7 +143,6 @@ public class Terrain extends Renderable {
 								float deltaY = (heightMap[curX][curZ] - lowestPoint) / 2;
 								newHeightMap[curX][curZ] -= deltaY;
 								distributeMovedMaterial(curX - 1, curZ, newHeightMap, deltaY);
-//								newHeightMap[curX-1][curZ] += deltaY;
 							} else {
 								newHeightMap[curX][curZ] -= Configuration.TERRAIN_EROSION_AMOUNT;
 								amountMoved += Configuration.TERRAIN_EROSION_AMOUNT;
@@ -149,11 +160,22 @@ public class Terrain extends Renderable {
 			
 			heightMap = newHeightMap.clone();
 		}
-				
-		createMesh(renderer);
+		
+		//Clean the edge
+		for (int x = 0; x < Configuration.TERRAIN_SIZE; x++) {
+			heightMap[x][0] = -550.0f;
+			heightMap[x][Configuration.TERRAIN_SIZE-1] = -550.0f;
+		}
+		for (int z = 0; z < Configuration.TERRAIN_SIZE; z++) {
+			heightMap[0][z] = -550.0f;
+			heightMap[Configuration.TERRAIN_SIZE-1][z] = -550.0f;
+		}
+		
+		erosionStarted = false;
+		erosionFinished = true;
 	}
 	
-	private void createMesh(Renderer renderer) {
+	public void createMesh(Renderer renderer) {
 		Vector3f[][] vertices = new Vector3f[Configuration.TERRAIN_SIZE+1][Configuration.TERRAIN_SIZE+1];
 		
 		/*
@@ -254,6 +276,7 @@ public class Terrain extends Renderable {
 
 		//Register with the renderer
 		renderer.registerRenderable(this);
+		erosionFinished = false;
 	}
 
 	private float average(float... floats) {
@@ -264,141 +287,19 @@ public class Terrain extends Renderable {
 		return sum / floats.length;
 	}
 	
-	/**
-	 * 
-	 * rc[0] = x1z1 = Corner towards x-1,z-1
-	 * rc[1] = x2z1 = Corner towards x+1,z-1
-	 * rc[2] = x2z2 = Corner towards x+1,z+1
-	 * rc[3] = x1z2 = Corner towards x-1,z+1
-	 * 	
-	 * @param heightMap
-	 * @param x
-	 * @param z
-	 * @return and array containing the corner values as described above
-	 */
-//	private float[] generateCornerValues(int x, int z) {
-		/*
-		 * Map of all surrounding heights.
-		 * 
-		 *        North
-		 * 	       -z
-		 * 
-		 * E    h1|h2|h3    W
-		 * a -x h4|XZ|h5 +x e
-		 * s    h6|h7|h8    s
-		 * t                t
-		 *         +z
-		 *        South
-		 *       
-		 * rc[0] = x1z1 = Corner towards x-1,z-1
-		 * rc[1] = x2z1 = Corner towards x+1,z-1
-		 * rc[2] = x2z2 = Corner towards x+1,z+1
-		 * rc[3] = x1z2 = Corner towards x-1,z+1
-		 * 
-		 */
-//		float[] rc = new float[4];
-//		
-//		float h1, h2, h3, h4, h5, h6, h7, h8;
-//		//H1
-//		if (x == 0) {
-//			if (z == 0) {
-//				h1 = heightMap[x][z];
-//			} else {
-//				h1 = heightMap[x][z-1];
-//			}
-//		} else {
-//			if (z == 0) {
-//				h1 = heightMap[x-1][z];
-//			} else {
-//				h1 = heightMap[x-1][z-1];
-//			}
-//		}
-//		//H2
-//		if (z == 0) {
-//			h2 = heightMap[x][z];
-//		} else {
-//			h2 = heightMap[x][z-1];
-//		}
-//		//H3
-//		if (x == Configuration.TERRAIN_SIZE - 1) {
-//			if (z == 0) {
-//				h3 = heightMap[x][z];
-//			} else {
-//				h3 = heightMap[x][z-1];
-//			}
-//		} else {
-//			if (z == 0) {
-//				h3 = heightMap[x+1][z];
-//			} else {
-//				h3 = heightMap[x+1][z-1];
-//			}
-//		}
-//		//H4
-//		if (x == 0) {
-//			h4 = heightMap[x][z];
-//		} else {
-//			h4 = heightMap[x-1][z];
-//		}
-//		//H5
-//		if (x == Configuration.TERRAIN_SIZE - 1) {
-//			h5 = heightMap[x][z];
-//		} else {
-//			h5 = heightMap[x+1][z];
-//		}
-//		//H6
-//		if (x == 0) {
-//			if (z == Configuration.TERRAIN_SIZE - 1) {
-//				h6 = heightMap[x][z];
-//			} else {
-//				h6 = heightMap[x][z+1];
-//			}
-//		} else {
-//			if (z == Configuration.TERRAIN_SIZE - 1) {
-//				h6 = heightMap[x-1][z];
-//			} else {
-//				h6 = heightMap[x-1][z+1];
-//			}
-//		}
-//		//H7
-//		if (z == Configuration.TERRAIN_SIZE - 1) {
-//			h7 = heightMap[x][z];
-//		} else {
-//			h7 = heightMap[x][z+1];
-//		}
-//		//H8
-//		if (x == Configuration.TERRAIN_SIZE - 1) {
-//			if (z == Configuration.TERRAIN_SIZE - 1) {
-//				h8 = heightMap[x][z];
-//			} else {
-//				h8 = heightMap[x][z+1];
-//			}
-//		} else {
-//			if (z == Configuration.TERRAIN_SIZE - 1) {
-//				h8 = heightMap[x+1][z];
-//			} else {
-//				h8 = heightMap[x+1][z+1];
-//			}
-//		}
-//		rc[0] = average(h1, h2, h4, heightMap[x][z]);
-//		rc[1] = average(h2, h3, h5, heightMap[x][z]);
-//		rc[2] = average(h4, h6, h7, heightMap[x][z]);
-//		rc[3] = average(h5, h7, h8, heightMap[x][z]);
-//		
-//		return rc;
-//	}
 	
 	private Vertex generateVertex(int x, int z, Vector3f[][] vertices) {
 		Vector3f normal = generateNormal(x, z, vertices);
 		
-		Vector3f color = colorGreen;
+		Vector3f color = COLOR_GRAS;
 		if (normal.y < 0.90) {
-			color = colorGrey;
+			color = COLOR_STONE;
 		}
 		if (vertices[x][z].y < 10.0f) {
-			color = colorSand;
+			color = COLOR_SAND;
 		}
 		if (vertices[x][z].y > 3000.0f) {
-			color = colorGrey;
+			color = COLOR_STONE;
 		}
 		
 		return new Vertex(vertices[x][z], normal, color);
@@ -437,6 +338,14 @@ public class Terrain extends Renderable {
 			newHeightMap[curX][curZ+1] += amountPart;
 		}
 		newHeightMap[curX][curZ] += amountPart * 4;
+	}
+
+	public boolean isErosionStarted() {
+		return erosionStarted;
+	}
+	
+	public boolean isErosionFinished() {
+		return erosionFinished;
 	}
 	
 }
