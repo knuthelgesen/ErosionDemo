@@ -19,9 +19,15 @@ public class Vertex {
 	}
 	
 	public void store(FloatBuffer buf) {
-		positionCoords.store(buf);
-		normal.store(buf);
-		color.store(buf);
+		if (null != positionCoords) {
+			positionCoords.store(buf);
+		}
+		if (null != normal) {
+			normal.store(buf);
+		}
+		if (null != color) {
+			color.store(buf);
+		}
 	}
 	
 }

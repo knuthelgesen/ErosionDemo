@@ -30,8 +30,8 @@ public class Terrain extends Renderable {
 		for (int x = 0; x < Configuration.TERRAIN_SIZE; x++) {
 			for (int z = 0; z < Configuration.TERRAIN_SIZE; z++) {
 //				heightMap[x][z] = (float)(Math.sin(((double)x / Configuration.TERRAIN_SIZE)* Math.PI) * Math.sin(((double)z / Configuration.TERRAIN_SIZE)* Math.PI) * 4000) - 550.0f + random.nextFloat() * 100;
-				heightMap[x][z] = (float)(Math.sin(((double)x / Configuration.TERRAIN_SIZE)* Math.PI) * Math.sin(((double)z / Configuration.TERRAIN_SIZE)* Math.PI) * 5000)
-						+ (float)(Math.sin(((double)x / Configuration.TERRAIN_SIZE)* Math.PI) * Math.sin(((double)z / Configuration.TERRAIN_SIZE)* Math.PI) * perlinNoise.getHeight(x, z) * 200) + 
+				heightMap[x][z] = (float)(Math.sin(((double)x / Configuration.TERRAIN_SIZE)* Math.PI) * Math.sin(((double)z / Configuration.TERRAIN_SIZE)* Math.PI) * 4500)
+						+ (float)(Math.sin(((double)x / Configuration.TERRAIN_SIZE)* Math.PI) * Math.sin(((double)z / Configuration.TERRAIN_SIZE)* Math.PI) * perlinNoise.getHeight(x, z) * 190) + 
 						- 550.0f;
 			}
 		}
@@ -54,7 +54,12 @@ public class Terrain extends Renderable {
 		/*
 		 * Do the erosion
 		 */
-		float[][] newHeightMap = heightMap.clone();
+		long startTime = System.currentTimeMillis();
+		float[][] newHeightMap = new float[Configuration.TERRAIN_SIZE][Configuration.TERRAIN_SIZE];
+		for (int i = 0; i < Configuration.TERRAIN_SIZE; i++) {
+			newHeightMap[i] = heightMap[i].clone();
+		}
+		
 		float landslideDeltaHeight = (float)((float)Configuration.TERRAIN_TILE_SIZE / Math.cos(Math.toRadians(Configuration.TERRAIN_LANDSLIDE_ANGLE)));
 		
 		/*
@@ -158,7 +163,9 @@ public class Terrain extends Renderable {
 				}					
 			}
 			
-			heightMap = newHeightMap.clone();
+			for (int j = 0; j < Configuration.TERRAIN_SIZE; j++) {
+				heightMap[j] = newHeightMap[j].clone();
+			}
 		}
 		
 		//Clean the edge
@@ -170,6 +177,9 @@ public class Terrain extends Renderable {
 			heightMap[0][z] = -550.0f;
 			heightMap[Configuration.TERRAIN_SIZE-1][z] = -550.0f;
 		}
+		long endTime = System.currentTimeMillis();
+		
+		System.out.println("" + (endTime - startTime));
 		
 		erosionStarted = false;
 		erosionFinished = true;

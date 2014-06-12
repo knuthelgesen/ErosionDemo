@@ -15,6 +15,7 @@ import org.lwjgl.util.vector.Vector3f;
 
 import no.plasmid.erosion.im.Camera;
 import no.plasmid.erosion.im.Renderable;
+import no.plasmid.erosion.im.Skybox;
 import no.plasmid.erosion.im.Terrain;
 import no.plasmid.erosion.im.Water;
 import no.plasmid.lib.AbstractApp;
@@ -47,10 +48,10 @@ public class App extends AbstractApp
   private void initializeApplication() {
   	//Open the program window
     try {
-    	PixelFormat pf = new PixelFormat(32, 8, 16, 0, 16);
+    	PixelFormat pf = new PixelFormat(24, 8, 24, 0, 16);
     	Display.setDisplayMode(new DisplayMode(Configuration.WINDOW_WIDTH, Configuration.WINDOW_HEIGTH));
     	Display.setTitle(Configuration.WINDOW_TITLE);
-    	Display.setVSyncEnabled(false);
+    	Display.setVSyncEnabled(true);
     	Display.create(pf);
 		} catch (LWJGLException e) {
 			// TODO Auto-generated catch block
@@ -71,14 +72,19 @@ public class App extends AbstractApp
   private void runApplication() {
   	Camera camera = new Camera();
   	
+  	Skybox skybox = new Skybox();
+  	renderer.registerRenderable(skybox);
+  	
   	List<Renderable> renderables = new ArrayList<Renderable>();
+//  	renderables.add(skybox);
+  	
+  	Water water = new Water();
+  	water.createMesh(renderer);
+  	renderables.add(water);
   	Terrain terrain = new Terrain();
   	terrain.createInitialTerrain();
   	terrain.createMesh(renderer);
   	renderables.add(terrain);
-  	Water water = new Water();
-  	water.createMesh(renderer);
-  	renderables.add(water);
   	
   	
   	//Create the projection matrix that is used for rendering
@@ -139,7 +145,7 @@ public class App extends AbstractApp
     	viewMatrix = camera.createViewMatrix();
     	viewMatrix.store(vmBuffer);
     	vmBuffer.flip();
-  		renderer.render(pmBuffer, vmBuffer, renderables);
+  		renderer.render(pmBuffer, vmBuffer, skybox, renderables);
 
   		inputHandler.handleInput();
   		

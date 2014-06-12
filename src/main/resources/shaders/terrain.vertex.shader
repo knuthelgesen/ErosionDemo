@@ -19,8 +19,8 @@ void main() {
 	/*
 	 * Perform position calculations
 	 */
-  mat4 mv = projectionMatrix * viewMatrix;
-	gl_Position = mv * vec4(position, 1.0);
+  mat4 vp = projectionMatrix * viewMatrix;
+	gl_Position = vp * vec4(position, 1.0);
 
 	/*
 	 * Perform light calculations

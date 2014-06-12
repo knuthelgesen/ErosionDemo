@@ -38,7 +38,7 @@ public abstract class Renderable {
 	public List<Vertex> getVertices() {
 		return vertices;
 	}
-
+	
 	public int getBufferId() {
 		return bufferId;
 	}
