@@ -76,7 +76,6 @@ public class App extends AbstractApp
   	renderer.registerRenderable(skybox);
   	
   	List<Renderable> renderables = new ArrayList<Renderable>();
-//  	renderables.add(skybox);
   	
   	Water water = new Water();
   	water.createMesh(renderer);
@@ -85,7 +84,9 @@ public class App extends AbstractApp
   	terrain.createInitialTerrain();
   	terrain.createMesh(renderer);
   	renderables.add(terrain);
-  	
+  	terrain.setApplicationExiting(false);
+  	terrain.setErosionRunning(false);
+  	terrain.triggerErosions();
   	
   	//Create the projection matrix that is used for rendering
   	Matrix4f projectionMatrix = renderer.calculateProjectionMatrix(Configuration.WINDOW_WIDTH, Configuration.WINDOW_HEIGTH,
@@ -99,7 +100,6 @@ public class App extends AbstractApp
   	
   	while (!inputHandler.isCloseRequested()) {
   		if (terrain.isErosionFinished()) {
-  			System.out.println("Creating new mesh");
   			terrain.createMesh(renderer);
   		}
   		
@@ -135,9 +135,16 @@ public class App extends AbstractApp
     		if (inputHandler.getKeyStatus()[Keyboard.KEY_PRIOR]) {
     			camera.moveCamera(new Vector3f(0.0f, -Configuration.CAMERA_MOVEMENT_SPEED, 0.0f));
     		}
-    		if (inputHandler.getKeyStatus()[Keyboard.KEY_SPACE] && !terrain.isErosionStarted()) {
-    			System.out.println("Run " + Configuration.TERRAIN_EROSION_STEPS + " erosion steps");
-    			terrain.triggerErosions();
+    		if (inputHandler.getKeyStatus()[Keyboard.KEY_SPACE]) {
+    			if (terrain.isErosionRunning()) {
+    				//Stop erosion
+      			System.out.println("Stop erosion");
+      			terrain.setErosionRunning(false);
+    			} else {
+    				//Start erosion
+      			System.out.println("Start erosion");
+      			terrain.setErosionRunning(true);
+    			}
     			inputHandler.getKeyStatus()[Keyboard.KEY_SPACE] = false;
     		}
   		}
@@ -153,6 +160,8 @@ public class App extends AbstractApp
   		
   		Display.sync(60);
   	}
+  	
+  	terrain.setApplicationExiting(true);
   }
 
   /**

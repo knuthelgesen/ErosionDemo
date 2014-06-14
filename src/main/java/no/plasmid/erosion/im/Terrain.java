@@ -16,9 +16,11 @@ public class Terrain extends Renderable {
 	private static final Vector3f COLOR_STONE = new Vector3f(0.65f, 0.65f, 0.65f);
 	
 	private float[][] heightMap;
-	private boolean erosionStarted;
 	private boolean erosionFinished;
 
+	private boolean applicationExiting;
+	private boolean erosionRunning;
+	
 	public void createInitialTerrain() {
 		heightMap = new float[Configuration.TERRAIN_SIZE][Configuration.TERRAIN_SIZE];
 
@@ -38,26 +40,27 @@ public class Terrain extends Renderable {
 	}
 
 	public void triggerErosions() {
-		erosionStarted = true;
 		Thread t = new Thread() {
 
+			private String LOCK = "";
+			
 			@Override
 			public void run() {
-				runErsions();
+				runErsions(LOCK);
 			}
-			
+					
 		};
 		t.start();
 	}
 	
-	private void runErsions() {
+	private void runErsions(String LOCK) {
 		/*
 		 * Do the erosion
 		 */
-		long startTime = System.currentTimeMillis();
-		float[][] newHeightMap = new float[Configuration.TERRAIN_SIZE][Configuration.TERRAIN_SIZE];
+		float[][][] newHeightMaps = new float[2][Configuration.TERRAIN_SIZE][Configuration.TERRAIN_SIZE];
 		for (int i = 0; i < Configuration.TERRAIN_SIZE; i++) {
-			newHeightMap[i] = heightMap[i].clone();
+			newHeightMaps[0][i] = heightMap[i].clone();
+			newHeightMaps[1][i] = heightMap[i].clone();
 		}
 		
 		float landslideDeltaHeight = (float)((float)Configuration.TERRAIN_TILE_SIZE / Math.cos(Math.toRadians(Configuration.TERRAIN_LANDSLIDE_ANGLE)));
@@ -69,120 +72,139 @@ public class Terrain extends Renderable {
 		 * 3 = south (z + 1)
 		 * 4 = west (x - 1)
 		 */
-		for (int i = 0; i < Configuration.TERRAIN_EROSION_STEPS; i++) {
-			for (int x = 0; x < Configuration.TERRAIN_SIZE; x++) {
-				for (int z = 0; z < Configuration.TERRAIN_SIZE; z++) {
-					int curX = x;
-					int curZ = z;
-					boolean finished = false;
-					float amountMoved = 0.0f;
-					while (!finished) {
-						if (heightMap[curX][curZ] < 0.0f) {
-							//If under water, don't erode
-							finished = true;
-							
-							distributeMovedMaterial(curX, curZ, newHeightMap, amountMoved);
-							continue;
-						}
-						
-						//Find lower neighbor
-						float lowestPoint = heightMap[curX][curZ];
-						int lowestNeighbor = 0;
-						if (curZ != 0 && heightMap[curX][curZ-1] < lowestPoint) {
-							lowestPoint = heightMap[curX][curZ-1];
-							lowestNeighbor = 1;
-						}
-						if (curX != Configuration.TERRAIN_SIZE - 1 && heightMap[curX+1][curZ] < lowestPoint) {
-							lowestPoint = heightMap[curX+1][curZ];
-							lowestNeighbor = 2;
-						}
-						if (curZ != Configuration.TERRAIN_SIZE - 1 && heightMap[curX][curZ+1] < lowestPoint) {
-							lowestPoint = heightMap[curX][curZ+1];
-							lowestNeighbor = 3;
-						}
-						if (curX != 0 && heightMap[curX-1][curZ] < lowestPoint) {
-							lowestPoint = heightMap[curX-1][curZ];
-							lowestNeighbor = 4;
-						}
-						
-						switch (lowestNeighbor) {
-						case 0:
-							finished = true;
-							distributeMovedMaterial(curX, curZ, newHeightMap, amountMoved);
-							break;
-						case 1:
-							if (((heightMap[curX][curZ] - lowestPoint) > landslideDeltaHeight) && (Math.random() < Configuration.TERRAIN_LANDSLIDE_CHANCE)) {
-								float deltaY = (heightMap[curX][curZ] - lowestPoint) / 2;
-								newHeightMap[curX][curZ] -= deltaY;
-								distributeMovedMaterial(curX, curZ - 1, newHeightMap, deltaY);
-							} else {
-								newHeightMap[curX][curZ] -= Configuration.TERRAIN_EROSION_AMOUNT;
-								amountMoved += Configuration.TERRAIN_EROSION_AMOUNT;
-							}
-							curZ = curZ - 1;
-							break;
-						case 2:
-							if (((heightMap[curX][curZ] - lowestPoint) > landslideDeltaHeight) && (Math.random() < Configuration.TERRAIN_LANDSLIDE_CHANCE)) {
-								float deltaY = (heightMap[curX][curZ] - lowestPoint) / 2;
-								newHeightMap[curX][curZ] -= deltaY;
-								distributeMovedMaterial(curX + 1, curZ, newHeightMap, deltaY);
-							} else {
-								newHeightMap[curX][curZ] -= Configuration.TERRAIN_EROSION_AMOUNT;
-								amountMoved += Configuration.TERRAIN_EROSION_AMOUNT;
-							}
-							curX = curX + 1;
-							break;
-						case 3:
-							if (((heightMap[curX][curZ] - lowestPoint) > landslideDeltaHeight) && (Math.random() < Configuration.TERRAIN_LANDSLIDE_CHANCE)) {
-								float deltaY = (heightMap[curX][curZ] - lowestPoint) / 2;
-								newHeightMap[curX][curZ] -= deltaY;
-								distributeMovedMaterial(curX, curZ + 1, newHeightMap, deltaY);
-							} else {
-								newHeightMap[curX][curZ] -= Configuration.TERRAIN_EROSION_AMOUNT;
-								amountMoved += Configuration.TERRAIN_EROSION_AMOUNT;
-							}
-							curZ = curZ + 1;
-							break;
-						case 4:
-							if (((heightMap[curX][curZ] - lowestPoint) > landslideDeltaHeight) && (Math.random() < Configuration.TERRAIN_LANDSLIDE_CHANCE)) {
-								float deltaY = (heightMap[curX][curZ] - lowestPoint) / 2;
-								newHeightMap[curX][curZ] -= deltaY;
-								distributeMovedMaterial(curX - 1, curZ, newHeightMap, deltaY);
-							} else {
-								newHeightMap[curX][curZ] -= Configuration.TERRAIN_EROSION_AMOUNT;
-								amountMoved += Configuration.TERRAIN_EROSION_AMOUNT;
-							}
-							curX = curX - 1;
-							break;
-						default:
-							finished = true;
-							distributeMovedMaterial(curX, curZ, newHeightMap, amountMoved);
-							break;
-						}
+		int completedErosionSteps = 0;
+		while (!applicationExiting) {
+			if (!isErosionRunning()) {
+				//Just wait
+				synchronized (LOCK) {
+					try {
+						LOCK.wait(100);
+					} catch (InterruptedException e) {
+						//This is ok
 					}
-				}					
-			}
+				}
+			} else {
+				//Do erosion
+				for (int x = 0; x < Configuration.TERRAIN_SIZE; x++) {
+					for (int z = 0; z < Configuration.TERRAIN_SIZE; z++) {
+						int curX = x;
+						int curZ = z;
+						boolean finished = false;
+						float amountMoved = 0.0f;
+						while (!finished) {
+							if (newHeightMaps[completedErosionSteps%2][curX][curZ] < -50.0f) {
+								//If under water, don't erode
+								finished = true;
+								
+								distributeMovedMaterial(curX, curZ, newHeightMaps[(completedErosionSteps+1)%2], amountMoved);
+								continue;
+							}
+							
+							//Find lower neighbor
+							float lowestPoint = newHeightMaps[completedErosionSteps%2][curX][curZ];
+							int lowestNeighbor = 0;
+							if (curZ != 0 && newHeightMaps[completedErosionSteps%2][curX][curZ-1] < lowestPoint) {
+								lowestPoint = newHeightMaps[completedErosionSteps%2][curX][curZ-1];
+								lowestNeighbor = 1;
+							}
+							if (curX != Configuration.TERRAIN_SIZE - 1 && newHeightMaps[completedErosionSteps%2][curX+1][curZ] < lowestPoint) {
+								lowestPoint = newHeightMaps[completedErosionSteps%2][curX+1][curZ];
+								lowestNeighbor = 2;
+							}
+							if (curZ != Configuration.TERRAIN_SIZE - 1 && newHeightMaps[completedErosionSteps%2][curX][curZ+1] < lowestPoint) {
+								lowestPoint = newHeightMaps[completedErosionSteps%2][curX][curZ+1];
+								lowestNeighbor = 3;
+							}
+							if (curX != 0 && newHeightMaps[completedErosionSteps%2][curX-1][curZ] < lowestPoint) {
+								lowestPoint = newHeightMaps[completedErosionSteps%2][curX-1][curZ];
+								lowestNeighbor = 4;
+							}
+							
+							switch (lowestNeighbor) {
+							case 0:
+								finished = true;
+								distributeMovedMaterial(curX, curZ, newHeightMaps[(completedErosionSteps+1)%2], amountMoved);
+								break;
+							case 1:
+								if (((newHeightMaps[completedErosionSteps%2][curX][curZ] - lowestPoint) > landslideDeltaHeight) && (Math.random() < Configuration.TERRAIN_LANDSLIDE_CHANCE)) {
+									float deltaY = (newHeightMaps[completedErosionSteps%2][curX][curZ] - lowestPoint) / 2;
+									newHeightMaps[(completedErosionSteps+1)%2][curX][curZ] -= deltaY;
+									distributeMovedMaterial(curX, curZ - 1, newHeightMaps[(completedErosionSteps+1)%2], deltaY);
+								} else {
+									newHeightMaps[(completedErosionSteps+1)%2][curX][curZ] -= Configuration.TERRAIN_EROSION_AMOUNT;
+									amountMoved += Configuration.TERRAIN_EROSION_AMOUNT;
+								}
+								curZ = curZ - 1;
+								break;
+							case 2:
+								if (((newHeightMaps[completedErosionSteps%2][curX][curZ] - lowestPoint) > landslideDeltaHeight) && (Math.random() < Configuration.TERRAIN_LANDSLIDE_CHANCE)) {
+									float deltaY = (newHeightMaps[completedErosionSteps%2][curX][curZ] - lowestPoint) / 2;
+									newHeightMaps[(completedErosionSteps+1)%2][curX][curZ] -= deltaY;
+									distributeMovedMaterial(curX + 1, curZ, newHeightMaps[(completedErosionSteps+1)%2], deltaY);
+								} else {
+									newHeightMaps[(completedErosionSteps+1)%2][curX][curZ] -= Configuration.TERRAIN_EROSION_AMOUNT;
+									amountMoved += Configuration.TERRAIN_EROSION_AMOUNT;
+								}
+								curX = curX + 1;
+								break;
+							case 3:
+								if (((newHeightMaps[completedErosionSteps%2][curX][curZ] - lowestPoint) > landslideDeltaHeight) && (Math.random() < Configuration.TERRAIN_LANDSLIDE_CHANCE)) {
+									float deltaY = (newHeightMaps[completedErosionSteps%2][curX][curZ] - lowestPoint) / 2;
+									newHeightMaps[(completedErosionSteps+1)%2][curX][curZ] -= deltaY;
+									distributeMovedMaterial(curX, curZ + 1, newHeightMaps[(completedErosionSteps+1)%2], deltaY);
+								} else {
+									newHeightMaps[(completedErosionSteps+1)%2][curX][curZ] -= Configuration.TERRAIN_EROSION_AMOUNT;
+									amountMoved += Configuration.TERRAIN_EROSION_AMOUNT;
+								}
+								curZ = curZ + 1;
+								break;
+							case 4:
+								if (((newHeightMaps[completedErosionSteps%2][curX][curZ] - lowestPoint) > landslideDeltaHeight) && (Math.random() < Configuration.TERRAIN_LANDSLIDE_CHANCE)) {
+									float deltaY = (newHeightMaps[completedErosionSteps%2][curX][curZ] - lowestPoint) / 2;
+									newHeightMaps[(completedErosionSteps+1)%2][curX][curZ] -= deltaY;
+									distributeMovedMaterial(curX - 1, curZ, newHeightMaps[(completedErosionSteps+1)%2], deltaY);
+								} else {
+									newHeightMaps[(completedErosionSteps+1)%2][curX][curZ] -= Configuration.TERRAIN_EROSION_AMOUNT;
+									amountMoved += Configuration.TERRAIN_EROSION_AMOUNT;
+								}
+								curX = curX - 1;
+								break;
+							default:
+								finished = true;
+								distributeMovedMaterial(curX, curZ, newHeightMaps[(completedErosionSteps+1)%2], amountMoved);
+								break;
+							}
+						}
+					}					
+				}
+				
+				for (int j = 0; j < Configuration.TERRAIN_SIZE; j++) {
+					newHeightMaps[completedErosionSteps%2][j] = newHeightMaps[(completedErosionSteps+1)%2][j].clone();
+				}
 			
-			for (int j = 0; j < Configuration.TERRAIN_SIZE; j++) {
-				heightMap[j] = newHeightMap[j].clone();
+				if (completedErosionSteps % Configuration.TERRAIN_EROSION_STEPS == 0) {
+					/*
+					 * Prepare for mesh generation
+					 */
+					for (int j = 0; j < Configuration.TERRAIN_SIZE; j++) {
+						heightMap[j] = newHeightMaps[(completedErosionSteps+1)%2][j].clone();
+					}
+					//Clean the edge
+					for (int x = 0; x < Configuration.TERRAIN_SIZE; x++) {
+						heightMap[x][0] = -550.0f;
+						heightMap[x][Configuration.TERRAIN_SIZE-1] = -550.0f;
+					}
+					for (int z = 0; z < Configuration.TERRAIN_SIZE; z++) {
+						heightMap[0][z] = -550.0f;
+						heightMap[Configuration.TERRAIN_SIZE-1][z] = -550.0f;
+					}
+					System.out.println("Total erosions steps: " + completedErosionSteps);
+					erosionFinished = true;
+				}
+				
+				completedErosionSteps++;
 			}
 		}
-		
-		//Clean the edge
-		for (int x = 0; x < Configuration.TERRAIN_SIZE; x++) {
-			heightMap[x][0] = -550.0f;
-			heightMap[x][Configuration.TERRAIN_SIZE-1] = -550.0f;
-		}
-		for (int z = 0; z < Configuration.TERRAIN_SIZE; z++) {
-			heightMap[0][z] = -550.0f;
-			heightMap[Configuration.TERRAIN_SIZE-1][z] = -550.0f;
-		}
-		long endTime = System.currentTimeMillis();
-		
-		System.out.println("" + (endTime - startTime));
-		
-		erosionStarted = false;
-		erosionFinished = true;
 	}
 	
 	public void createMesh(Renderer renderer) {
@@ -350,12 +372,28 @@ public class Terrain extends Renderable {
 		newHeightMap[curX][curZ] += amountPart * 4;
 	}
 
-	public boolean isErosionStarted() {
-		return erosionStarted;
-	}
-	
 	public boolean isErosionFinished() {
 		return erosionFinished;
+	}
+
+	public void setErosionFinished(boolean erosionFinished) {
+		this.erosionFinished = erosionFinished;
+	}
+
+	public boolean isErosionRunning() {
+		return erosionRunning;
+	}
+
+	public void setErosionRunning(boolean erosionRunning) {
+		this.erosionRunning = erosionRunning;
+	}
+
+	public boolean isApplicationExiting() {
+		return applicationExiting;
+	}
+
+	public void setApplicationExiting(boolean applicationExiting) {
+		this.applicationExiting = applicationExiting;
 	}
 	
 }
