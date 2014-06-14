@@ -71,6 +71,8 @@ public class Terrain extends Renderable {
 		 * 2 = east (x + 1)
 		 * 3 = south (z + 1)
 		 * 4 = west (x - 1)
+		 * 
+		 * 5 mean edge of map
 		 */
 		int completedErosionSteps = 0;
 		while (!applicationExiting) {
@@ -103,6 +105,10 @@ public class Terrain extends Renderable {
 							//Find lower neighbor
 							float lowestPoint = newHeightMaps[completedErosionSteps%2][curX][curZ];
 							int lowestNeighbor = 0;
+							if (curX == 0 || curX == Configuration.TERRAIN_SIZE - 1 || curZ == 0 || curZ == Configuration.TERRAIN_SIZE - 1) {
+								lowestNeighbor = 5;
+								lowestPoint = Float.NEGATIVE_INFINITY;
+							}
 							if (curZ != 0 && newHeightMaps[completedErosionSteps%2][curX][curZ-1] < lowestPoint) {
 								lowestPoint = newHeightMaps[completedErosionSteps%2][curX][curZ-1];
 								lowestNeighbor = 1;
@@ -168,6 +174,10 @@ public class Terrain extends Renderable {
 									amountMoved += Configuration.TERRAIN_EROSION_AMOUNT;
 								}
 								curX = curX - 1;
+								break;
+							case 5:
+								//Edge of map, so discard the material
+								finished = true;
 								break;
 							default:
 								finished = true;

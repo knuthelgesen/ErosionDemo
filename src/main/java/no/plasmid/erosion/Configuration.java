@@ -25,7 +25,7 @@ public class Configuration {
 	public static final float TERRAIN_LANDSLIDE_ANGLE		= 45.0f;	//Angle at which the terrain is considered for a landslide
 	public static final float TERRAIN_LANDSLIDE_CHANCE	= 0.001f;	//Chance of landslide occuring (considered each tick, so should be low)
 
-	public static final float[] FOG_COLOR = new float[]{1.0f, 1.0f, 1.0f};
+	public static final float[] FOG_COLOR = new float[]{0.9f, 0.9f, 0.9f};
 	public static final float FOG_START 	= 20000;
 	public static final float FOG_TRANSPARENCY_START 	= 22500;
 	
