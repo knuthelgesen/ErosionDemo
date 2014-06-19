@@ -14,8 +14,10 @@ public class Terrain extends Renderable {
 	private static final Vector3f COLOR_GRAS = new Vector3f(0.0f, 0.7f, 0.1f);
 	private static final Vector3f COLOR_SAND = new Vector3f(0.85f, 0.6f, 0.0f);
 	private static final Vector3f COLOR_STONE = new Vector3f(0.65f, 0.65f, 0.65f);
+	private static final Vector3f COLOR_WATER = new Vector3f(0.0f, 0.0f, 1.0f);
 	
 	private float[][] heightMap;
+	private int[][] waterMap;
 	private boolean erosionFinished;
 
 	private boolean applicationExiting;
@@ -23,6 +25,7 @@ public class Terrain extends Renderable {
 	
 	public void createInitialTerrain() {
 		heightMap = new float[Configuration.TERRAIN_SIZE][Configuration.TERRAIN_SIZE];
+		waterMap = new int[Configuration.TERRAIN_SIZE][Configuration.TERRAIN_SIZE];
 
 		//To seed the erosion
 //		Random random = new Random(Configuration.TERRAIN_NOISE_RANDOM_SEED);
@@ -87,6 +90,7 @@ public class Terrain extends Renderable {
 				}
 			} else {
 				//Do erosion
+				int[][] newWaterMap = new int[Configuration.TERRAIN_SIZE][Configuration.TERRAIN_SIZE];
 				for (int x = 0; x < Configuration.TERRAIN_SIZE; x++) {
 					for (int z = 0; z < Configuration.TERRAIN_SIZE; z++) {
 						int curX = x;
@@ -112,18 +116,22 @@ public class Terrain extends Renderable {
 							if (curZ != 0 && newHeightMaps[completedErosionSteps%2][curX][curZ-1] < lowestPoint) {
 								lowestPoint = newHeightMaps[completedErosionSteps%2][curX][curZ-1];
 								lowestNeighbor = 1;
+								newWaterMap[curX][curZ-1]++;
 							}
 							if (curX != Configuration.TERRAIN_SIZE - 1 && newHeightMaps[completedErosionSteps%2][curX+1][curZ] < lowestPoint) {
 								lowestPoint = newHeightMaps[completedErosionSteps%2][curX+1][curZ];
 								lowestNeighbor = 2;
+								newWaterMap[curX+1][curZ]++;
 							}
 							if (curZ != Configuration.TERRAIN_SIZE - 1 && newHeightMaps[completedErosionSteps%2][curX][curZ+1] < lowestPoint) {
 								lowestPoint = newHeightMaps[completedErosionSteps%2][curX][curZ+1];
 								lowestNeighbor = 3;
+								newWaterMap[curX][curZ+1]++;
 							}
 							if (curX != 0 && newHeightMaps[completedErosionSteps%2][curX-1][curZ] < lowestPoint) {
 								lowestPoint = newHeightMaps[completedErosionSteps%2][curX-1][curZ];
 								lowestNeighbor = 4;
+								newWaterMap[curX-1][curZ]++;
 							}
 							
 							switch (lowestNeighbor) {
@@ -198,6 +206,7 @@ public class Terrain extends Renderable {
 					 */
 					for (int j = 0; j < Configuration.TERRAIN_SIZE; j++) {
 						heightMap[j] = newHeightMaps[(completedErosionSteps+1)%2][j].clone();
+						waterMap[j] = newWaterMap[j].clone();
 					}
 					//Clean the edge
 					for (int x = 0; x < Configuration.TERRAIN_SIZE; x++) {
@@ -219,6 +228,7 @@ public class Terrain extends Renderable {
 	
 	public void createMesh(Renderer renderer) {
 		Vector3f[][] vertices = new Vector3f[Configuration.TERRAIN_SIZE+1][Configuration.TERRAIN_SIZE+1];
+		int[][] waters = new int[Configuration.TERRAIN_SIZE+1][Configuration.TERRAIN_SIZE+1];
 		
 		/*
 		 * First we must generate the array of vertices and normals. Later we will pick from these when we generate the vertex list.
@@ -244,6 +254,12 @@ public class Terrain extends Renderable {
 				float h4 = heightMap[x!=Configuration.TERRAIN_SIZE?x:x-1][z!=Configuration.TERRAIN_SIZE?z:z-1]; 
 				float height = average(h1, h2, h3, h4);
 				vertices[x][z] = new Vector3f(x * Configuration.TERRAIN_TILE_SIZE, height, z * Configuration.TERRAIN_TILE_SIZE);
+				int w1 = waterMap[x!=0?x-1:x][z!=0?z-1:z];
+				int w2 = waterMap[x!=Configuration.TERRAIN_SIZE?x:x-1][z!=0?z-1:z]; 
+				int w3 = waterMap[x!=0?x-1:x][z!=Configuration.TERRAIN_SIZE?z:z-1]; 
+				int w4 = waterMap[x!=Configuration.TERRAIN_SIZE?x:x-1][z!=Configuration.TERRAIN_SIZE?z:z-1]; 
+				int waterCount = average(w1, w2, w3, w4);
+				waters[x][z] = waterCount;
 			}
 		}
 		
@@ -287,13 +303,13 @@ public class Terrain extends Renderable {
 		for (int x = 0; x < Configuration.TERRAIN_SIZE;) {
 			int z = 0;
 			//First two initial points
-			vertexList.add(generateVertex(x + 1, z, vertices));
-			vertexList.add(generateVertex(x, z, vertices));
+			vertexList.add(generateVertex(x + 1, z, vertices, waters));
+			vertexList.add(generateVertex(x, z, vertices, waters));
 			
 			//Go one way with z
 			while (z < Configuration.TERRAIN_SIZE) {
-				vertexList.add(generateVertex(x + 1, z + 1, vertices));
-				vertexList.add(generateVertex(x, z + 1, vertices));
+				vertexList.add(generateVertex(x + 1, z + 1, vertices, waters));
+				vertexList.add(generateVertex(x, z + 1, vertices, waters));
 				z++;
 			}
 			z--;
@@ -302,13 +318,13 @@ public class Terrain extends Renderable {
 			x++;
 			
 			//Two points to start the second row
-			vertexList.add(generateVertex(x, z + 1, vertices));
-			vertexList.add(generateVertex(x + 1, z + 1, vertices));
+			vertexList.add(generateVertex(x, z + 1, vertices, waters));
+			vertexList.add(generateVertex(x + 1, z + 1, vertices, waters));
 			
 			//Go the other way
 			while (z > -1) {
-				vertexList.add(generateVertex(x, z, vertices));
-				vertexList.add(generateVertex(x + 1, z, vertices));
+				vertexList.add(generateVertex(x, z, vertices, waters));
+				vertexList.add(generateVertex(x + 1, z, vertices, waters));
 				z--;
 			}
 			
@@ -329,19 +345,32 @@ public class Terrain extends Renderable {
 		return sum / floats.length;
 	}
 	
+	private int average(int... ints) {
+		int sum = 0;
+		for (int i : ints) {
+			sum += i;
+		}
+		return sum / ints.length;
+	}
 	
-	private Vertex generateVertex(int x, int z, Vector3f[][] vertices) {
+	private Vertex generateVertex(int x, int z, Vector3f[][] vertices, int[][] waterCounts) {
 		Vector3f normal = generateNormal(x, z, vertices);
 		
 		Vector3f color = COLOR_GRAS;
 		if (normal.y < 0.90) {
 			color = COLOR_STONE;
 		}
+		if (vertices[x][z].y > 3000.0f) {
+			color = COLOR_STONE;
+		}
 		if (vertices[x][z].y < 10.0f) {
 			color = COLOR_SAND;
 		}
-		if (vertices[x][z].y > 3000.0f) {
-			color = COLOR_STONE;
+		if (waterCounts[x][z] > Configuration.RIVER_THRESHOLD) {
+			color = COLOR_WATER;
+		}
+		if (vertices[x][z].y < 0.0f) {
+			color = COLOR_SAND;
 		}
 		
 		return new Vertex(vertices[x][z], normal, color);
