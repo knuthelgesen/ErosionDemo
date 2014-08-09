@@ -64,7 +64,6 @@ kernel void getheight(const float persistence,
 			global const int* xPos,
 			global const int* yPos,
 			global float* answer) {
-			
 	unsigned int xid = get_global_id(0);
 	
 	//properties of one octave (changing each loop)

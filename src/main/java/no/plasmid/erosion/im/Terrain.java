@@ -16,10 +16,12 @@ import no.plasmid.erosion.Renderer;
 
 public class Terrain extends Renderable {
 
-	private static final Vector3f COLOR_GRAS = new Vector3f(0.0f, 0.7f, 0.1f);
+	private static final Vector3f COLOR_HIGH_GRAS = new Vector3f(0.0f, 0.8f, 0.1f);
+	private static final Vector3f COLOR_LOW_GRAS = new Vector3f(0.0f, 0.6f, 0.1f);
 	private static final Vector3f COLOR_SAND = new Vector3f(0.85f, 0.6f, 0.0f);
 	private static final Vector3f COLOR_STONE = new Vector3f(0.65f, 0.65f, 0.65f);
-	private static final Vector3f COLOR_WATER = new Vector3f(0.0f, 0.0f, 1.0f);
+	private static final Vector3f COLOR_SNOW = new Vector3f(0.95f, 0.95f, 1.0f);
+	private static final Vector3f COLOR_WATER = new Vector3f(0.2f, 0.2f, 1.0f);
 	
 	private float[][] heightMap;
 	private int[][] waterMap;
@@ -35,17 +37,20 @@ public class Terrain extends Renderable {
 		//To seed the erosion
 		Random random = new Random(Configuration.TERRAIN_NOISE_RANDOM_SEED);
 
+		long startTime = System.currentTimeMillis();
 		if (Configuration.USE_OPEN_CL) {
 			generateNoiseHeightMapOpenCL(clWrapper);
 		} else {
 			generateNoiseHeightMapJava();
 		}
+		long endTime = System.currentTimeMillis();
+		System.out.println("Terrain generation time: " + (endTime - startTime));
 		
 		for (int x = 0; x < Configuration.TERRAIN_SIZE; x++) {
 			for (int z = 0; z < Configuration.TERRAIN_SIZE; z++) {
 				heightMap[x][z] = (float)((heightMap[x][z] * 190 * Math.sin(((double)x / Configuration.TERRAIN_SIZE)* Math.PI) * Math.sin(((double)z / Configuration.TERRAIN_SIZE)* Math.PI))
-						+ (Math.sin(((double)x / Configuration.TERRAIN_SIZE)* Math.PI) * Math.sin(((double)z / Configuration.TERRAIN_SIZE)* Math.PI) * 4500)
-						- 550.0f + random.nextFloat() * 200);
+						+ (Math.sin(((double)x / Configuration.TERRAIN_SIZE)* Math.PI) * Math.sin(((double)z / Configuration.TERRAIN_SIZE)* Math.PI) * Configuration.TERRAIN_SINE_AMPLITUDE)
+						+ Configuration.TERRAIN_INITIAL_HEIGHT + random.nextFloat() * Configuration.TERRAIN_RANDOM_AMPLITUDE);
 			}
 		}
 	}
@@ -306,70 +311,27 @@ public class Terrain extends Renderable {
 		vertexList.clear();
 		
 		/*
-		 * To make a triangle strip, we need to go back and forth, adding one strip each way.
-		 * Begin:
-		 * x = 0; {
-		 *   x % 2 = 0;
-		 *   Add two points to begin.
-		 *   z = 0 then loop until z = TERRAIN_SIZE - 1. Add two points for each square (two triangles)
-		 *   x++ (sp x % 2 = 1)
-		 *   Add two point to begin the other way
-		 *   z = TERRAIN SIZE - 1, loop until z = 0. Add two points for each square (two triangles)
-		 *   x++ (so x % 2 = 0 again)
-		 * }
-		 * Repeat until x = TERRAIN_SIZE - 1
+		 * Create quads for each point of terrain
 		 */
-
-		/*
-		 * Map of all surrounding heights.
-		 * 
-		 *        North
-		 * 	       -z
-		 * 
-		 * E    h1|h2|h3    W
-		 * a -x h4|XZ|h5 +x e
-		 * s    h6|h7|h8    s
-		 * t                t
-		 *         +z
-		 *        South
-		 *       
-		 * x1z1 = Corner towards x-1,z-1
-		 * x2z1 = Corner towards x+1,z-1
-		 * x2z2 = Corner towards x+1,z+1
-		 * x1z2 = Corner towards x-1,z+1
-		 * 
-		 */
-		for (int x = 0; x < Configuration.TERRAIN_SIZE;) {
-			int z = 0;
-			//First two initial points
-			vertexList.add(generateVertex(x + 1, z, vertices, waters));
-			vertexList.add(generateVertex(x, z, vertices, waters));
-			
-			//Go one way with z
-			while (z < Configuration.TERRAIN_SIZE) {
-				vertexList.add(generateVertex(x + 1, z + 1, vertices, waters));
-				vertexList.add(generateVertex(x, z + 1, vertices, waters));
-				z++;
+		for (int x = 0; x < Configuration.TERRAIN_SIZE; x++) {
+			for (int z = 0; z < Configuration.TERRAIN_SIZE; z++) {
+				//Create normal for the quad
+				Vector3f normal = generateNormal(x, z, vertices);
+				normal = Vector3f.add(normal, generateNormal(x+1, z, vertices), normal);
+				normal = Vector3f.add(normal, generateNormal(x+1, z+1, vertices), normal);
+				normal = Vector3f.add(normal, generateNormal(x, z+1, vertices), normal);
+				normal.normalise();
+				
+				//Pick color for the quad
+				Vector3f color = pickColor(heightMap[x][z], normal, waterMap[x][z]);
+				
+				//Generate quad
+				vertexList.add(new Vertex(vertices[x][z+1], normal, color));
+				vertexList.add(new Vertex(vertices[x+1][z+1], normal, color));
+				vertexList.add(new Vertex(vertices[x+1][z], normal, color));
+				vertexList.add(new Vertex(vertices[x][z], normal, color));
 			}
-			z--;
-			
-			//Increase x to next row
-			x++;
-			
-			//Two points to start the second row
-			vertexList.add(generateVertex(x, z + 1, vertices, waters));
-			vertexList.add(generateVertex(x + 1, z + 1, vertices, waters));
-			
-			//Go the other way
-			while (z > -1) {
-				vertexList.add(generateVertex(x, z, vertices, waters));
-				vertexList.add(generateVertex(x + 1, z, vertices, waters));
-				z--;
-			}
-			
-			//Finished with this row, increase again
-			x++;
-		}		
+		}
 
 		//Register with the renderer
 		renderer.registerRenderable(this);
@@ -392,34 +354,31 @@ public class Terrain extends Renderable {
 		return sum / ints.length;
 	}
 	
-	private Vertex generateVertex(int x, int z, Vector3f[][] vertices, int[][] waterCounts) {
-		Vector3f normal = generateNormal(x, z, vertices);
-		
-		Vector3f color = COLOR_GRAS;
+	private Vector3f pickColor(float height, Vector3f normal, int waterCount) {
+		Vector3f color = COLOR_LOW_GRAS;
+		if (height > 1500.0f) {
+			color = COLOR_HIGH_GRAS;
+		}
 		if (normal.y < 0.90) {
 			color = COLOR_STONE;
 		}
-		if (vertices[x][z].y > 3000.0f) {
+		if (height > 3000.0f) {
 			color = COLOR_STONE;
 		}
-		if (vertices[x][z].y < 10.0f) {
+		if (height < 10.0f) {
 			color = COLOR_SAND;
 		}
-		if (waterCounts[x][z] > Configuration.RIVER_THRESHOLD) {
+		if (waterCount > Configuration.RIVER_THRESHOLD) {
 			color = COLOR_WATER;
 		}
-		if (vertices[x][z].y < 0.0f) {
-			color = COLOR_SAND;
+		if (height > 4500.0f) {
+			color = COLOR_SNOW;
 		}
 		
-		return new Vertex(vertices[x][z], normal, color);
+		return color;
 	}
-	
-	private Vector3f generateNormal(int x, int z, Vector3f[][] vertices) {
-		Vector3f rc = new Vector3f();
 		
-		rc.y = (float)z / 64.0f;
-
+	private Vector3f generateNormal(int x, int z, Vector3f[][] vertices) {
 		float height = vertices[x][z].y;
 		Vector3f v1 = new Vector3f(Configuration.TERRAIN_TILE_SIZE, vertices[x!=Configuration.TERRAIN_SIZE?x+1:x][z].y - height, 0.0f);	//Eastbound vector
 		Vector3f v2 = new Vector3f(0.0f, vertices[x][z!=Configuration.TERRAIN_SIZE?z+1:z].y - height, Configuration.TERRAIN_TILE_SIZE);	//Southbound vector

@@ -16,8 +16,8 @@ public class Water extends Renderable {
 		
 		vertexList.add(new Vertex(new Vector3f(Configuration.TERRAIN_SIZE * Configuration.TERRAIN_TILE_SIZE + extraWater, 0.0f, -extraWater), new Vector3f(0.0f, 1.0f, 0.0f), new Vector3f(0.0f, 0.0f, 1.0f)));
 		vertexList.add(new Vertex(new Vector3f(-extraWater, 0.0f, -extraWater), new Vector3f(0.0f, 1.0f, 0.0f), new Vector3f(0.0f, 0.0f, 1.0f)));
-		vertexList.add(new Vertex(new Vector3f(Configuration.TERRAIN_SIZE * Configuration.TERRAIN_TILE_SIZE + extraWater, 0.0f, Configuration.TERRAIN_SIZE * Configuration.TERRAIN_TILE_SIZE + extraWater), new Vector3f(0.0f, 1.0f, 0.0f), new Vector3f(0.0f, 0.0f, 1.0f)));
 		vertexList.add(new Vertex(new Vector3f(-extraWater, 0.0f, Configuration.TERRAIN_SIZE * Configuration.TERRAIN_TILE_SIZE + extraWater), new Vector3f(0.0f, 1.0f, 0.0f), new Vector3f(0.0f, 0.0f, 1.0f)));
+		vertexList.add(new Vertex(new Vector3f(Configuration.TERRAIN_SIZE * Configuration.TERRAIN_TILE_SIZE + extraWater, 0.0f, Configuration.TERRAIN_SIZE * Configuration.TERRAIN_TILE_SIZE + extraWater), new Vector3f(0.0f, 1.0f, 0.0f), new Vector3f(0.0f, 0.0f, 1.0f)));
 		
 		renderer.registerRenderable(this);
 	}

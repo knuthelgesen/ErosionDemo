@@ -196,7 +196,7 @@ public class Renderer extends AbstractRenderer {
       GL20.glVertexAttribPointer(terrainShaderDescriptor.getColorAttributeId(), 3, GL11.GL_FLOAT, false, 9 * 4, 6 * 4);
   		
   		//Draw
-  		GL11.glDrawArrays(GL11.GL_TRIANGLE_STRIP, 0, renderable.getVertices().size());
+  		GL11.glDrawArrays(GL11.GL_QUADS, 0, renderable.getVertices().size());
     }
     
 		//Disable vertex attribute arrays

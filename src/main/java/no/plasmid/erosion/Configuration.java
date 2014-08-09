@@ -16,12 +16,16 @@ public class Configuration {
 	public static final int TERRAIN_SIZE		= 256;	//Unit is terrain tiles
 	public static final int TERRAIN_TILE_SIZE	= 256;	//Unit is meters
 	
-	public static final float TERRAIN_NOISE_PERSISTENCE	= 0.42f;
-	public static final float TERRAIN_NOISE_FREQUENCY	= 0.035f;
-	public static final float TERRAIN_NOISE_AMPLITUDE	= 70.0f;
-	public static final int TERRAIN_NOISE_OCTAVES			= 10;
+	public static final float TERRAIN_INITIAL_HEIGHT		= -550.0f;
+	public static final int TERRAIN_SINE_AMPLITUDE			= 4000;
+	public static final float TERRAIN_NOISE_PERSISTENCE	= 0.37f;
+	public static final float TERRAIN_NOISE_FREQUENCY		= 0.035f;
+	public static final float TERRAIN_NOISE_AMPLITUDE		= 70.0f;
+	public static final int TERRAIN_NOISE_OCTAVES				= 10;
+	public static final int TERRAIN_RANDOM_AMPLITUDE		= 200;
 //	public static final int TERRAIN_NOISE_RANDOM_SEED		= (int)(System.currentTimeMillis() % 46340);
 	public static final int TERRAIN_NOISE_RANDOM_SEED		= 3;
+	
 	public static final float TERRAIN_EROSION_AMOUNT		= 0.0001f;
 	public static final int TERRAIN_EROSION_STEPS				= 500;		//Number of erosion steps before rebuilding mesh
 	public static final float TERRAIN_LANDSLIDE_ANGLE		= 55.0f;	//Angle at which the terrain is considered for a landslide
