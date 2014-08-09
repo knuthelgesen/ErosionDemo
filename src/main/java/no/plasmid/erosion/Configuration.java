@@ -10,16 +10,18 @@ public class Configuration {
 	
 	public static final float CAMERA_MOVEMENT_SPEED	= 200.0f;
 	public static final float CAMERA_ROTATION_SPEED	= 2.0f;	//Degrees
+
+	public static final boolean USE_OPEN_CL = true;
 	
 	public static final int TERRAIN_SIZE		= 256;	//Unit is terrain tiles
 	public static final int TERRAIN_TILE_SIZE	= 256;	//Unit is meters
 	
-	public static final double TERRAIN_NOISE_PERSISTENCE	= 0.42;
-	public static final double TERRAIN_NOISE_FREQUENCY	= 0.035;
-	public static final double TERRAIN_NOISE_AMPLITUDE	= 70.0;
+	public static final float TERRAIN_NOISE_PERSISTENCE	= 0.42f;
+	public static final float TERRAIN_NOISE_FREQUENCY	= 0.035f;
+	public static final float TERRAIN_NOISE_AMPLITUDE	= 70.0f;
 	public static final int TERRAIN_NOISE_OCTAVES			= 10;
 //	public static final int TERRAIN_NOISE_RANDOM_SEED		= (int)(System.currentTimeMillis() % 46340);
-	public static final int TERRAIN_NOISE_RANDOM_SEED		= 1;
+	public static final int TERRAIN_NOISE_RANDOM_SEED		= 3;
 	public static final float TERRAIN_EROSION_AMOUNT		= 0.0001f;
 	public static final int TERRAIN_EROSION_STEPS				= 500;		//Number of erosion steps before rebuilding mesh
 	public static final float TERRAIN_LANDSLIDE_ANGLE		= 55.0f;	//Angle at which the terrain is considered for a landslide

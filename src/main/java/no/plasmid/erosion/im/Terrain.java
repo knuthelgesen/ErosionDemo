@@ -1,10 +1,15 @@
 package no.plasmid.erosion.im;
 
+import java.io.FileNotFoundException;
+import java.nio.FloatBuffer;
 import java.util.List;
-//import java.util.Random;
+import java.util.Random;
 
+import org.lwjgl.LWJGLException;
 import org.lwjgl.util.vector.Vector3f;
 
+import no.plasmid.erosion.CLPerlinNoise;
+import no.plasmid.erosion.CLWrapper;
 import no.plasmid.erosion.Configuration;
 import no.plasmid.erosion.PerlinNoise;
 import no.plasmid.erosion.Renderer;
@@ -23,22 +28,56 @@ public class Terrain extends Renderable {
 	private boolean applicationExiting;
 	private boolean erosionRunning;
 	
-	public void createInitialTerrain() {
+	public void createInitialTerrain(CLWrapper clWrapper) {
 		heightMap = new float[Configuration.TERRAIN_SIZE][Configuration.TERRAIN_SIZE];
 		waterMap = new int[Configuration.TERRAIN_SIZE][Configuration.TERRAIN_SIZE];
 
 		//To seed the erosion
-//		Random random = new Random(Configuration.TERRAIN_NOISE_RANDOM_SEED);
-		PerlinNoise perlinNoise = new PerlinNoise(Configuration.TERRAIN_NOISE_PERSISTENCE, Configuration.TERRAIN_NOISE_FREQUENCY,
-				Configuration.TERRAIN_NOISE_AMPLITUDE, Configuration.TERRAIN_NOISE_OCTAVES, Configuration.TERRAIN_NOISE_RANDOM_SEED);
+		Random random = new Random(Configuration.TERRAIN_NOISE_RANDOM_SEED);
+
+		if (Configuration.USE_OPEN_CL) {
+			generateNoiseHeightMapOpenCL(clWrapper);
+		} else {
+			generateNoiseHeightMapJava();
+		}
 		
 		for (int x = 0; x < Configuration.TERRAIN_SIZE; x++) {
 			for (int z = 0; z < Configuration.TERRAIN_SIZE; z++) {
-//				heightMap[x][z] = (float)(Math.sin(((double)x / Configuration.TERRAIN_SIZE)* Math.PI) * Math.sin(((double)z / Configuration.TERRAIN_SIZE)* Math.PI) * 4000) - 550.0f + random.nextFloat() * 100;
-				heightMap[x][z] = (float)(Math.sin(((double)x / Configuration.TERRAIN_SIZE)* Math.PI) * Math.sin(((double)z / Configuration.TERRAIN_SIZE)* Math.PI) * 4500)
-						+ (float)(Math.sin(((double)x / Configuration.TERRAIN_SIZE)* Math.PI) * Math.sin(((double)z / Configuration.TERRAIN_SIZE)* Math.PI) * perlinNoise.getHeight(x, z) * 190) + 
-						- 550.0f;
+				heightMap[x][z] = (float)((heightMap[x][z] * 190 * Math.sin(((double)x / Configuration.TERRAIN_SIZE)* Math.PI) * Math.sin(((double)z / Configuration.TERRAIN_SIZE)* Math.PI))
+						+ (Math.sin(((double)x / Configuration.TERRAIN_SIZE)* Math.PI) * Math.sin(((double)z / Configuration.TERRAIN_SIZE)* Math.PI) * 4500)
+						- 550.0f + random.nextFloat() * 200);
 			}
+		}
+	}
+
+	private void generateNoiseHeightMapJava() {
+		PerlinNoise perlinNoise = new PerlinNoise(Configuration.TERRAIN_NOISE_PERSISTENCE, Configuration.TERRAIN_NOISE_FREQUENCY,
+				Configuration.TERRAIN_NOISE_AMPLITUDE, Configuration.TERRAIN_NOISE_OCTAVES, Configuration.TERRAIN_NOISE_RANDOM_SEED);
+
+		for (int x = 0; x < Configuration.TERRAIN_SIZE; x++) {
+			for (int z = 0; z < Configuration.TERRAIN_SIZE; z++) {
+				heightMap[x][z] = perlinNoise.getHeight(x, z);
+			}
+		}
+	}
+	private void generateNoiseHeightMapOpenCL(CLWrapper clWrapper) {
+		CLPerlinNoise clNoise = new CLPerlinNoise(clWrapper);
+
+		try {
+			clNoise.prepareDataAndProgram();
+		
+			FloatBuffer heightValues = clNoise.calculateOpenCL();
+			
+			for (int x = 0; x < Configuration.TERRAIN_SIZE; x++) {
+				for (int z = 0; z < Configuration.TERRAIN_SIZE; z++) {
+					heightMap[x][z] = heightValues.get(x + z * Configuration.TERRAIN_SIZE);
+				}
+			}
+			
+			clNoise.cleanupDataAndProgram();
+		} catch (FileNotFoundException | LWJGLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
 		}
 	}
 

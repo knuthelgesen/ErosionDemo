@@ -41,6 +41,9 @@ public class App extends AbstractApp
 	
 	//Renderer instance
 	private Renderer renderer;
+	
+	//OpenCL wrapper to be used if applicable
+	private CLWrapper clWrapper;
 
 	/*
    * Perform initialization to prepare for running
@@ -64,6 +67,17 @@ public class App extends AbstractApp
     //Create the renderer
     renderer = new Renderer();
     renderer.initializeRenderer();
+    
+    //Initialize OpenCL if applicable
+    if (Configuration.USE_OPEN_CL) {
+    	clWrapper = new CLWrapper();
+    	try {
+				clWrapper.initializeOpenCL();
+			} catch (LWJGLException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+    }
   }
 
   /**
@@ -81,7 +95,7 @@ public class App extends AbstractApp
   	water.createMesh(renderer);
   	renderables.add(water);
   	Terrain terrain = new Terrain();
-  	terrain.createInitialTerrain();
+  	terrain.createInitialTerrain(clWrapper);
   	terrain.createMesh(renderer);
   	renderables.add(terrain);
   	terrain.setApplicationExiting(false);
@@ -170,6 +184,11 @@ public class App extends AbstractApp
   private void cleanupApplication() {
   	//Destroy the program window
   	Display.destroy();
+  	
+  	//Clean up OpenCL if applicable
+  	if (Configuration.USE_OPEN_CL) {
+    	clWrapper.cleanupOpenCL();
+    }
   }
 
   @Override
