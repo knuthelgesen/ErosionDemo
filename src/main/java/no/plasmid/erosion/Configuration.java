@@ -18,10 +18,10 @@ public class Configuration {
 	
 	public static final float TERRAIN_INITIAL_HEIGHT		= -550.0f;
 	public static final int TERRAIN_SINE_AMPLITUDE			= 4000;
-	public static final float TERRAIN_NOISE_PERSISTENCE	= 0.37f;
+	public static final float TERRAIN_NOISE_PERSISTENCE	= 0.47f;
 	public static final float TERRAIN_NOISE_FREQUENCY		= 0.035f;
 	public static final float TERRAIN_NOISE_AMPLITUDE		= 70.0f;
-	public static final int TERRAIN_NOISE_OCTAVES				= 10;
+	public static final int TERRAIN_NOISE_OCTAVES				= 20;
 	public static final int TERRAIN_RANDOM_AMPLITUDE		= 200;
 //	public static final int TERRAIN_NOISE_RANDOM_SEED		= (int)(System.currentTimeMillis() % 46340);
 	public static final int TERRAIN_NOISE_RANDOM_SEED		= 3;

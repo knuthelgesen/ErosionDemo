@@ -105,6 +105,7 @@ public class Terrain extends Renderable {
 		 * Do the erosion
 		 */
 		float[][][] newHeightMaps = new float[2][Configuration.TERRAIN_SIZE][Configuration.TERRAIN_SIZE];
+		int[][] newWaterMap = new int[Configuration.TERRAIN_SIZE][Configuration.TERRAIN_SIZE];
 		for (int i = 0; i < Configuration.TERRAIN_SIZE; i++) {
 			newHeightMaps[0][i] = heightMap[i].clone();
 			newHeightMaps[1][i] = heightMap[i].clone();
@@ -123,7 +124,7 @@ public class Terrain extends Renderable {
 		 */
 		int completedErosionSteps = 0;
 		while (!applicationExiting) {
-			if (!isErosionRunning()) {
+			while (!erosionRunning && !applicationExiting) {
 				//Just wait
 				synchronized (LOCK) {
 					try {
@@ -132,9 +133,10 @@ public class Terrain extends Renderable {
 						//This is ok
 					}
 				}
-			} else {
-				//Do erosion
-				int[][] newWaterMap = new int[Configuration.TERRAIN_SIZE][Configuration.TERRAIN_SIZE];
+			}
+			//Do erosion
+			while (erosionRunning && !applicationExiting) {
+				newWaterMap = new int[Configuration.TERRAIN_SIZE][Configuration.TERRAIN_SIZE];
 				for (int x = 0; x < Configuration.TERRAIN_SIZE; x++) {
 					for (int z = 0; z < Configuration.TERRAIN_SIZE; z++) {
 						int curX = x;
@@ -245,29 +247,31 @@ public class Terrain extends Renderable {
 				}
 			
 				if (completedErosionSteps % Configuration.TERRAIN_EROSION_STEPS == 0) {
-					/*
-					 * Prepare for mesh generation
-					 */
-					for (int j = 0; j < Configuration.TERRAIN_SIZE; j++) {
-						heightMap[j] = newHeightMaps[(completedErosionSteps+1)%2][j].clone();
-						waterMap[j] = newWaterMap[j].clone();
-					}
-					//Clean the edge
-					for (int x = 0; x < Configuration.TERRAIN_SIZE; x++) {
-						heightMap[x][0] = -550.0f;
-						heightMap[x][Configuration.TERRAIN_SIZE-1] = -550.0f;
-					}
-					for (int z = 0; z < Configuration.TERRAIN_SIZE; z++) {
-						heightMap[0][z] = -550.0f;
-						heightMap[Configuration.TERRAIN_SIZE-1][z] = -550.0f;
-					}
 					System.out.println("Total erosions steps: " + completedErosionSteps);
 					erosionFinished = true;
 				}
 				
 				completedErosionSteps++;
 			}
-		}
+			
+			/*
+			 * Prepare for mesh generation
+			 */
+			for (int j = 0; j < Configuration.TERRAIN_SIZE; j++) {
+				heightMap[j] = newHeightMaps[(completedErosionSteps+1)%2][j].clone();
+				waterMap[j] = newWaterMap[j].clone();
+			}
+			//Clean the edge
+			for (int x = 0; x < Configuration.TERRAIN_SIZE; x++) {
+				heightMap[x][0] = -550.0f;
+				heightMap[x][Configuration.TERRAIN_SIZE-1] = -550.0f;
+			}
+			for (int z = 0; z < Configuration.TERRAIN_SIZE; z++) {
+				heightMap[0][z] = -550.0f;
+				heightMap[Configuration.TERRAIN_SIZE-1][z] = -550.0f;
+			}
+			erosionFinished = true;
+		}		
 	}
 	
 	public void createMesh(Renderer renderer) {
@@ -413,20 +417,12 @@ public class Terrain extends Renderable {
 		return erosionFinished;
 	}
 
-	public void setErosionFinished(boolean erosionFinished) {
-		this.erosionFinished = erosionFinished;
-	}
-
 	public boolean isErosionRunning() {
 		return erosionRunning;
 	}
 
 	public void setErosionRunning(boolean erosionRunning) {
 		this.erosionRunning = erosionRunning;
-	}
-
-	public boolean isApplicationExiting() {
-		return applicationExiting;
 	}
 
 	public void setApplicationExiting(boolean applicationExiting) {

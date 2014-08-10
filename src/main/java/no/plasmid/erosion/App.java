@@ -114,6 +114,7 @@ public class App extends AbstractApp
   	
   	while (!inputHandler.isCloseRequested()) {
   		if (terrain.isErosionFinished()) {
+  			System.out.println("Creating mesh");
   			terrain.createMesh(renderer);
   		}
   		
